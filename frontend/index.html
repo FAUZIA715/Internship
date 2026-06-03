@@ -7,246 +7,219 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="/src/index.css" />
 </head>
-<body class="antialiased" style="font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f6f9fc 0%, #eef2f7 100%); min-height: 100vh;">
+<body class="antialiased" style="font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
     <div class="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div class="w-full max-w-md">
-            <div class="flex justify-center mb-6">
-                <div class="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm border border-gray-200/60">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span class="text-xs font-semibold text-gray-700 tracking-wide">AUTOMATED VERIFICATION</span>
-                </div>
-            </div>
-            <div style="background: rgba(255, 255, 255, 0.98); border-radius: 2rem; box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.02); border: 1px solid rgba(255, 255, 255, 0.5);" class="p-6 sm:p-8">
-                <div class="flex justify-between items-center mb-5">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Welcome back</h2>
-                        <p class="text-sm text-gray-500 mt-1">Sign in to your verification portal</p>
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <i class="fas fa-shield-alt text-white text-3xl"></i>
                     </div>
-                    <div class="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
-                        <i class="fas fa-fingerprint text-blue-600 text-xl"></i>
-                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800">VeriFlow</h2>
+                    <p class="text-gray-500 mt-2">Automated Background Verification System</p>
                 </div>
                 
                 <form id="loginForm" class="space-y-5">
-                    <div class="space-y-1.5">
-                        <label class="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <i class="fas fa-user text-gray-400 text-xs"></i>Username or Email
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-2 text-gray-400"></i>Email Address
                         </label>
-                        <div class="relative">
-                            <input type="text" id="username" name="username" required 
-                                class="w-full pl-10 pr-3 py-2.5 text-gray-800 placeholder:text-gray-400 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                                placeholder="john.doe@example.com / candidate01" autocomplete="username" />
-                            <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400 text-sm"></i>
-                        </div>
+                        <input type="email" id="username" name="username" required 
+                            class="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                            placeholder="Enter your email" autocomplete="username" />
                     </div>
                     
-                    <div class="space-y-1.5">
-                        <label class="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <i class="fas fa-lock text-gray-400 text-xs"></i>Password
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-gray-400"></i>Password
                         </label>
                         <div class="relative">
                             <input type="password" id="password" name="password" required 
-                                class="w-full pl-10 pr-10 py-2.5 text-gray-800 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                                placeholder="••••••••" autocomplete="current-password" />
-                            <i class="fas fa-key absolute left-3 top-3.5 text-gray-400 text-sm"></i>
-                            <button type="button" id="togglePassword" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition">
-                                <i class="fas fa-eye-slash text-sm"></i>
+                                class="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                                placeholder="Enter your password" autocomplete="current-password" />
+                            <button type="button" id="togglePassword" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye-slash"></i>
                             </button>
                         </div>
                     </div>
                     
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
+                        <label class="flex items-center cursor-pointer">
                             <input type="checkbox" id="rememberMe" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                            <label for="rememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer">Remember me</label>
-                        </div>
+                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                        </label>
                         <button type="button" id="forgotPasswordBtn" class="text-sm text-blue-600 hover:text-blue-700 hover:underline">
                             Forgot password?
                         </button>
                     </div>
                     
-                    <div id="loginMessage" class="text-sm rounded-lg p-2 hidden"></div>
+                    <div id="loginMessage" class="text-sm rounded-lg p-3 hidden"></div>
                     
-                    <button type="submit" id="loginBtn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold text-base rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-lg">
-                        <i class="fas fa-arrow-right-to-bracket"></i> Sign In
-                        <span id="loaderIcon" class="hidden ml-2"><i class="fas fa-spinner fa-spin"></i></span>
+                    <button type="submit" id="loginBtn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                        <span id="loginText">Sign In</span>
+                        <span id="loginLoader" class="hidden"><i class="fas fa-spinner fa-spin"></i> Signing in...</span>
                     </button>
                 </form>
             </div>
         </div>
     </div>
     
-    <div id="toastMsg" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none"></div>
-    
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Reset Password</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <p class="text-gray-600 mb-6">Enter your email address and we'll send you a link to reset your password.</p>
+            <form id="forgotForm">
+                <input type="email" id="resetEmail" required 
+                    class="w-full px-4 py-3 text-gray-800 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all mb-4"
+                    placeholder="Enter your email address" />
+                <div id="resetMessage" class="text-sm rounded-lg p-3 hidden mb-4"></div>
+                <button type="submit" id="sendResetBtn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all">
+                    Send Reset Link
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
         const loginForm = document.getElementById('loginForm');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const rememberMeCheckbox = document.getElementById('rememberMe');
-        const loginMessageDiv = document.getElementById('loginMessage');
+        const loginMessage = document.getElementById('loginMessage');
         const loginBtn = document.getElementById('loginBtn');
-        const loaderIcon = document.getElementById('loaderIcon');
-        const toggleBtn = document.getElementById('togglePassword');
-        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+        const loginText = document.getElementById('loginText');
+        const loginLoader = document.getElementById('loginLoader');
+        const togglePassword = document.getElementById('togglePassword');
+        const forgotBtn = document.getElementById('forgotPasswordBtn');
+        const modal = document.getElementById('forgotModal');
+        const closeModal = document.getElementById('closeModal');
+        const forgotForm = document.getElementById('forgotForm');
+        const resetEmail = document.getElementById('resetEmail');
+        const resetMessage = document.getElementById('resetMessage');
+        const sendResetBtn = document.getElementById('sendResetBtn');
 
-        function showMessage(message, isError = true) {
-            loginMessageDiv.innerText = message;
-            loginMessageDiv.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-700', 'bg-blue-50', 'text-blue-700');
+        function showMessage(element, message, isError = true) {
+            element.textContent = message;
+            element.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-700');
             if (isError) {
-                loginMessageDiv.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+                element.classList.add('bg-red-50', 'text-red-700');
             } else {
-                loginMessageDiv.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+                element.classList.add('bg-green-50', 'text-green-800');
             }
-            loginMessageDiv.classList.remove('hidden');
-            setTimeout(() => {
-                if (loginMessageDiv && !loginMessageDiv.classList.contains('hidden')) {
-                    loginMessageDiv.classList.add('hidden');
-                }
-            }, 3800);
+            setTimeout(() => element.classList.add('hidden'), 4000);
         }
 
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toastMsg');
-            if (!toast) return;
-            const bgColor = type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-emerald-600' : 'bg-gray-800');
-            toast.innerHTML = `<div class="${bgColor} text-white px-5 py-2 rounded-full shadow-lg text-sm font-medium flex items-center gap-2"><i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-circle-check'}"></i>${message}</div>`;
-            toast.classList.remove('opacity-0', 'translate-y-2');
-            toast.classList.add('opacity-100', 'translate-y-0');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                toast.classList.remove('opacity-100', 'translate-y-0');
-            }, 3000);
-        }
-
-        function saveCredentials(username, password) {
-            if (rememberMeCheckbox.checked) {
-                localStorage.setItem('rememberedUsername', username);
-                localStorage.setItem('rememberedPassword', password);
-                localStorage.setItem('rememberMe', 'true');
-            } else {
-                localStorage.removeItem('rememberedUsername');
-                localStorage.removeItem('rememberedPassword');
-                localStorage.setItem('rememberMe', 'false');
-            }
-        }
+        loadSavedCredentials();
 
         function loadSavedCredentials() {
-            const rememberMe = localStorage.getItem('rememberMe');
-            if (rememberMe === 'true') {
-                const savedUsername = localStorage.getItem('rememberedUsername');
-                const savedPassword = localStorage.getItem('rememberedPassword');
-                if (savedUsername) usernameInput.value = savedUsername;
+            const savedEmail = localStorage.getItem('savedEmail');
+            const savedPassword = localStorage.getItem('savedPassword');
+            const remember = localStorage.getItem('remember');
+            if (remember === 'true' && savedEmail) {
+                usernameInput.value = savedEmail;
                 if (savedPassword) passwordInput.value = savedPassword;
                 rememberMeCheckbox.checked = true;
             }
         }
 
-        function performAuthentication(username, password) {
-            return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    if (!username || username.trim() === "") {
-                        reject("Please enter username/email.");
-                        return;
-                    }
-                    if (!password || password.trim() === "") {
-                        reject("Password cannot be empty.");
-                        return;
-                    }
-
-                    let role = null;
-                    if ((username.toLowerCase() === 'admin@veriflow.com' || username.toLowerCase() === 'admin') && password === 'admin123') {
-                        role = 'admin';
-                    } 
-                    else if ((username.toLowerCase() === 'candidate@example.com' || username.toLowerCase() === 'candidate01' || username.toLowerCase() === 'candidate') && password === 'cand123') {
-                        role = 'candidate';
-                    }
-                    else if (username.toLowerCase() === 'user@demo.com' && password === 'demo123') {
-                        role = 'candidate';
-                    }
-                    else {
-                        reject("Invalid credentials. Use admin@veriflow.com/admin123 or candidate@example.com/cand123");
-                        return;
-                    }
-
-                    resolve(role);
-                }, 1500);
-            });
+        function saveCredentials(email, password) {
+            if (rememberMeCheckbox.checked) {
+                localStorage.setItem('savedEmail', email);
+                localStorage.setItem('savedPassword', password);
+                localStorage.setItem('remember', 'true');
+            } else {
+                localStorage.removeItem('savedEmail');
+                localStorage.removeItem('savedPassword');
+                localStorage.setItem('remember', 'false');
+            }
         }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = usernameInput.value;
+            const email = usernameInput.value;
             const password = passwordInput.value;
-            
+
+            loginText.classList.add('hidden');
+            loginLoader.classList.remove('hidden');
             loginBtn.disabled = true;
-            loaderIcon.classList.remove('hidden');
-            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying credentials...';
+
+            setTimeout(() => {
+                if (email === 'admin@veriflow.com' && password === 'admin123') {
+                    saveCredentials(email, password);
+                    showMessage(loginMessage, '✅ Admin login successful! Redirecting...', false);
+                    setTimeout(() => alert('Welcome to Admin Dashboard'), 500);
+                } 
+                else if (email === 'candidate@veriflow.com' && password === 'cand123') {
+                    saveCredentials(email, password);
+                    showMessage(loginMessage, '✅ Candidate login successful! Redirecting...', false);
+                    setTimeout(() => alert('Welcome to Candidate Dashboard'), 500);
+                }
+                else {
+                    showMessage(loginMessage, '❌ Invalid credentials. Use admin@veriflow.com/admin123 or candidate@veriflow.com/cand123');
+                }
+                
+                loginText.classList.remove('hidden');
+                loginLoader.classList.add('hidden');
+                loginBtn.disabled = false;
+            }, 1000);
+        });
+
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            togglePassword.querySelector('i').classList.toggle('fa-eye');
+            togglePassword.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+
+        forgotBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = resetEmail.value;
             
-            try {
-                const role = await performAuthentication(username, password);
-                saveCredentials(username, password);
-                showMessage(`${role === 'admin' ? 'Admin' : 'Candidate'} authentication successful! Redirecting...`, false);
-                showToast(`Welcome ${username}!`, "success");
+            sendResetBtn.disabled = true;
+            sendResetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            
+            setTimeout(() => {
+                const resetToken = Math.random().toString(36).substring(2, 20);
+                localStorage.setItem(`reset_${email}`, resetToken);
+                
+                console.log(`========================================`);
+                console.log(`📧 Password Reset Email Sent to: ${email}`);
+                console.log(`🔗 Reset Link: http://localhost:5173/reset-password.html?token=${resetToken}&email=${encodeURIComponent(email)}`);
+                console.log(`========================================`);
+                
+                showMessage(resetMessage, `✅ Reset link sent to ${email}! Check console for demo link.`, false);
                 
                 setTimeout(() => {
-                    loginBtn.disabled = false;
-                    loaderIcon.classList.add('hidden');
-                    loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Sign In';
-                    if (role === 'admin') {
-                        alert("Admin Dashboard: View candidates, verify documents, update status");
-                    } else {
-                        alert("Candidate Dashboard: Upload documents, track verification, download reports");
-                    }
-                }, 500);
-            } catch (error) {
-                showMessage(error, true);
-                showToast(error, "error");
-                loginBtn.disabled = false;
-                loaderIcon.classList.add('hidden');
-                loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Sign In';
-            }
-        });
-
-        toggleBtn.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            const icon = toggleBtn.querySelector('i');
-            if (type === 'text') {
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            } else {
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        });
-
-        forgotPasswordBtn.addEventListener('click', () => {
-            showToast("Password reset link sent to your registered email!", "info");
-            showMessage("📧 Password reset instructions have been sent to your email address.", false);
-        });
-
-        const inputs = [usernameInput, passwordInput];
-        inputs.forEach(inp => {
-            inp.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    loginForm.dispatchEvent(new Event('submit'));
-                }
-            });
-        });
-
-        loadSavedCredentials();
-
-        rememberMeCheckbox.addEventListener('change', () => {
-            if (!rememberMeCheckbox.checked) {
-                localStorage.removeItem('rememberedUsername');
-                localStorage.removeItem('rememberedPassword');
-                localStorage.setItem('rememberMe', 'false');
-            }
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    resetEmail.value = '';
+                    sendResetBtn.disabled = false;
+                    sendResetBtn.innerHTML = 'Send Reset Link';
+                }, 2000);
+            }, 1000);
         });
     </script>
 </body>
