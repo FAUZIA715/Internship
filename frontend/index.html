@@ -59,9 +59,13 @@
                         </div>
                     </div>
                     
-                    <div class="flex justify-end">
-                        <button type="button" id="demoHintBtn" class="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1">
-                            <i class="fas fa-info-circle"></i> Demo credentials?
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="rememberMe" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                            <label for="rememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer">Remember me</label>
+                        </div>
+                        <button type="button" id="forgotPasswordBtn" class="text-sm text-blue-600 hover:text-blue-700 hover:underline">
+                            Forgot password?
                         </button>
                     </div>
                     
@@ -82,11 +86,12 @@
         const loginForm = document.getElementById('loginForm');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
+        const rememberMeCheckbox = document.getElementById('rememberMe');
         const loginMessageDiv = document.getElementById('loginMessage');
         const loginBtn = document.getElementById('loginBtn');
         const loaderIcon = document.getElementById('loaderIcon');
         const toggleBtn = document.getElementById('togglePassword');
-        const demoHintBtn = document.getElementById('demoHintBtn');
+        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
 
         function showMessage(message, isError = true) {
             loginMessageDiv.innerText = message;
@@ -117,63 +122,93 @@
             }, 3000);
         }
 
-        function performAuthentication(username, password) {
-            if (!username || username.trim() === "") {
-                showMessage("Please enter username/email.", true);
-                return false;
+        function saveCredentials(username, password) {
+            if (rememberMeCheckbox.checked) {
+                localStorage.setItem('rememberedUsername', username);
+                localStorage.setItem('rememberedPassword', password);
+                localStorage.setItem('rememberMe', 'true');
+            } else {
+                localStorage.removeItem('rememberedUsername');
+                localStorage.removeItem('rememberedPassword');
+                localStorage.setItem('rememberMe', 'false');
             }
-            if (!password || password.trim() === "") {
-                showMessage("Password cannot be empty.", true);
-                return false;
-            }
-
-            let role = null;
-            if ((username.toLowerCase() === 'admin@veriflow.com' || username.toLowerCase() === 'admin') && password === 'admin123') {
-                role = 'admin';
-            } 
-            else if ((username.toLowerCase() === 'candidate@example.com' || username.toLowerCase() === 'candidate01' || username.toLowerCase() === 'candidate') && password === 'cand123') {
-                role = 'candidate';
-            }
-            else if (username.toLowerCase() === 'user@demo.com' && password === 'demo123') {
-                role = 'candidate';
-            }
-            else {
-                showMessage("Invalid credentials. Use admin@veriflow.com/admin123 or candidate@example.com/cand123", true);
-                return false;
-            }
-
-            if (role === 'admin') {
-                showMessage("Admin authentication successful! Redirecting...", false);
-                setTimeout(() => {
-                    showToast("Welcome Admin!", "success");
-                }, 800);
-                return true;
-            } else if (role === 'candidate') {
-                showMessage(`Welcome ${username}! Redirecting...`, false);
-                setTimeout(() => {
-                    showToast("Welcome Candidate!", "success");
-                }, 800);
-                return true;
-            }
-            return false;
         }
 
-        loginForm.addEventListener('submit', (e) => {
+        function loadSavedCredentials() {
+            const rememberMe = localStorage.getItem('rememberMe');
+            if (rememberMe === 'true') {
+                const savedUsername = localStorage.getItem('rememberedUsername');
+                const savedPassword = localStorage.getItem('rememberedPassword');
+                if (savedUsername) usernameInput.value = savedUsername;
+                if (savedPassword) passwordInput.value = savedPassword;
+                rememberMeCheckbox.checked = true;
+            }
+        }
+
+        function performAuthentication(username, password) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (!username || username.trim() === "") {
+                        reject("Please enter username/email.");
+                        return;
+                    }
+                    if (!password || password.trim() === "") {
+                        reject("Password cannot be empty.");
+                        return;
+                    }
+
+                    let role = null;
+                    if ((username.toLowerCase() === 'admin@veriflow.com' || username.toLowerCase() === 'admin') && password === 'admin123') {
+                        role = 'admin';
+                    } 
+                    else if ((username.toLowerCase() === 'candidate@example.com' || username.toLowerCase() === 'candidate01' || username.toLowerCase() === 'candidate') && password === 'cand123') {
+                        role = 'candidate';
+                    }
+                    else if (username.toLowerCase() === 'user@demo.com' && password === 'demo123') {
+                        role = 'candidate';
+                    }
+                    else {
+                        reject("Invalid credentials. Use admin@veriflow.com/admin123 or candidate@example.com/cand123");
+                        return;
+                    }
+
+                    resolve(role);
+                }, 1500);
+            });
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = usernameInput.value;
             const password = passwordInput.value;
             
             loginBtn.disabled = true;
             loaderIcon.classList.remove('hidden');
-            const originalText = loginBtn.innerHTML;
-            loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Signing in...';
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying credentials...';
             
-            setTimeout(() => {
-                performAuthentication(username, password);
+            try {
+                const role = await performAuthentication(username, password);
+                saveCredentials(username, password);
+                showMessage(`${role === 'admin' ? 'Admin' : 'Candidate'} authentication successful! Redirecting...`, false);
+                showToast(`Welcome ${username}!`, "success");
+                
+                setTimeout(() => {
+                    loginBtn.disabled = false;
+                    loaderIcon.classList.add('hidden');
+                    loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Sign In';
+                    if (role === 'admin') {
+                        alert("Admin Dashboard: View candidates, verify documents, update status");
+                    } else {
+                        alert("Candidate Dashboard: Upload documents, track verification, download reports");
+                    }
+                }, 500);
+            } catch (error) {
+                showMessage(error, true);
+                showToast(error, "error");
                 loginBtn.disabled = false;
                 loaderIcon.classList.add('hidden');
-                loginBtn.innerHTML = originalText;
-            }, 500);
+                loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Sign In';
+            }
         });
 
         toggleBtn.addEventListener('click', () => {
@@ -189,9 +224,9 @@
             }
         });
 
-        demoHintBtn.addEventListener('click', () => {
-            showMessage("Demo: admin@veriflow.com/admin123 or candidate@example.com/cand123", false);
-            showToast("Use demo credentials", "info");
+        forgotPasswordBtn.addEventListener('click', () => {
+            showToast("Password reset link sent to your registered email!", "info");
+            showMessage("📧 Password reset instructions have been sent to your email address.", false);
         });
 
         const inputs = [usernameInput, passwordInput];
@@ -202,6 +237,16 @@
                     loginForm.dispatchEvent(new Event('submit'));
                 }
             });
+        });
+
+        loadSavedCredentials();
+
+        rememberMeCheckbox.addEventListener('change', () => {
+            if (!rememberMeCheckbox.checked) {
+                localStorage.removeItem('rememberedUsername');
+                localStorage.removeItem('rememberedPassword');
+                localStorage.setItem('rememberMe', 'false');
+            }
         });
     </script>
 </body>
