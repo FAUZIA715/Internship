@@ -1,7 +1,30 @@
+import { useState } from "react";
 import "./CandidateForm.css";
 import { FaUserTie } from "react-icons/fa";
 
 function CandidateForm() {
+
+  const [formData, setFormData] = useState({
+  fullName: "",
+  email: "",
+  phone: "",
+  position: "",
+  experience: "",
+});
+
+  const handleChange = (e) => {
+  setFormData({
+    ...formData,
+    [e.target.name]: e.target.value,
+  });
+};
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+
+  console.log(JSON.stringify(formData, null, 2));
+};
+
   return (
     <div className="candidate-page">
       <div className="candidate-card">
@@ -18,48 +41,63 @@ function CandidateForm() {
           Enter candidate information.
         </p>
 
-        <form>
+        <form onSubmit={handleSubmit}>
 
           <div className="input-group">
             <label>Full Name</label>
-            <input
-              type="text"
-              placeholder="Enter full name"
-            />
+<input
+  type="text"
+  name="fullName"
+  placeholder="Enter full name"
+  value={formData.fullName}
+  onChange={handleChange}
+/>
           </div>
 
           <div className="input-group">
             <label>Email</label>
-            <input
-              type="email"
-              placeholder="Enter email"
-            />
+<input
+  type="email"
+  name="email"
+  placeholder="Enter email"
+  value={formData.email}
+  onChange={handleChange}
+/>  
           </div>
 
           <div className="input-group">
             <label>Phone Number</label>
-            <input
-              type="text"
-              placeholder="Enter phone number"
-            />
+<input
+  type="text"
+  name="phone"
+  placeholder="Enter phone number"
+  value={formData.phone}
+  onChange={handleChange}
+/>
           </div>
 
           <div className="input-group">
             <label>Position Applied</label>
-            <input
-              type="text"
-              placeholder="Frontend Developer"
-            />
+<input
+  type="text"
+  name="position"
+  placeholder="Frontend Developer"
+  value={formData.position}
+  onChange={handleChange}
+/>
           </div>
 
           <div className="input-group">
             <label>Experience</label>
-            <input
-              type="number"
-              placeholder="Years of experience"
-            />
+<input
+  type="number"
+  name="experience"
+  placeholder="Years of experience"
+  value={formData.experience}
+  onChange={handleChange}
+/>
           </div>
-
+  
           <div className="input-group">
             <label>Resume</label>
             <input type="file" />
@@ -74,6 +112,6 @@ function CandidateForm() {
       </div>
     </div>
   );
-}
 
+}
 export default CandidateForm;
