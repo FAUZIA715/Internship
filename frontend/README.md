@@ -1,16 +1,32 @@
-# React + Vite
+# 📄 Document Management Module
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+The Document Upload Module is a core component of the VeriFlow Automated Background Verification System. It provides a secure and user-friendly interface for candidates to upload, view, update, and manage their verification documents.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+### ✅ Document Management
+- **Upload Documents** - Upload Aadhaar, PAN, Degree, Employment, and Address proofs
+- **View Documents** - Browse all uploaded documents with verification status
+- **Update Documents** - Replace existing documents with new versions
+- **Delete Documents** - Remove unwanted documents
+- **Download Documents** - Download uploaded documents for reference
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📊 Status Tracking
+- **Verified** - Document has been approved by admin
+- **Pending** - Document waiting for verification
+- **Rejected** - Document rejected with reason provided
 
-## Expanding the ESLint configuration
+### 🔍 Search & Filter
+- Filter documents by status (All/Verified/Pending/Rejected)
+- Search documents by name or filename
+- Real-time filtering results
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 📈 Dashboard Statistics
+- Total documents count
+- Verified documents count
+- Pending documents count
+- Rejected documents count
+- Overall verification completion percentage
+
