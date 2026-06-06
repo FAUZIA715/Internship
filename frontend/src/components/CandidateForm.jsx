@@ -12,7 +12,6 @@ const CandidateForm = () => {
     positionApplied: '',
     experience: ''
   });
-  
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [message, setMessage] = useState('');
@@ -23,10 +22,8 @@ const CandidateForm = () => {
   const [resumeName, setResumeName] = useState('');
   const navigate = useNavigate();
 
-  // Real-time validation
   const validateField = (name, value) => {
     let error = '';
-    
     switch(name) {
       case 'fullName':
         if (!value) error = 'Full name is required';
@@ -48,7 +45,6 @@ const CandidateForm = () => {
       default:
         break;
     }
-    
     setErrors(prev => ({ ...prev, [name]: error }));
     return !error;
   };
@@ -61,7 +57,6 @@ const CandidateForm = () => {
 
   const checkEmailAvailability = async (email) => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) return;
-    
     setEmailChecking(true);
     try {
       const response = await fetch(`http://localhost:5000/api/candidates/${email}`);
@@ -79,7 +74,6 @@ const CandidateForm = () => {
     }
   };
 
-  // Handle Resume Upload
   const handleResumeUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -112,7 +106,6 @@ const CandidateForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate all fields
     let isValid = true;
     Object.keys(formData).forEach(key => {
       if (!validateField(key, formData[key])) {
@@ -131,7 +124,6 @@ const CandidateForm = () => {
     setMessage('');
 
     try {
-      // Create FormData for file upload
       const submitData = new FormData();
       Object.keys(formData).forEach(key => {
         submitData.append(key, formData[key]);
@@ -142,7 +134,7 @@ const CandidateForm = () => {
 
       const response = await fetch('http://localhost:5000/api/candidates/register', {
         method: 'POST',
-        body: submitData,  // Don't set Content-Type - browser sets it for FormData
+        body: submitData,
       });
 
       const data = await response.json();
@@ -175,7 +167,13 @@ const CandidateForm = () => {
 
   return (
     <div className="candidate-form-container">
-      <h2>📝 Candidate Registration</h2>
+      {/* Admin Badge */}
+      <div className="admin-badge">
+        <span className="admin-icon">👑</span>
+        <span>Admin Portal | Candidate Registration</span>
+      </div>
+
+      <h2>Candidate Registration</h2>
       <p className="subtitle">Enter candidate information</p>
 
       {message && <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>{message}</div>}
@@ -295,9 +293,8 @@ const CandidateForm = () => {
           </select>
         </div>
 
-        {/* Resume Upload */}
         <div className="form-group">
-          <label>📄 Resume / CV *</label>
+          <label>📄 Resume / CV (Optional)</label>
           <div className="resume-upload-area">
             <input
               type="file"

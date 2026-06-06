@@ -21,17 +21,14 @@ const AllCandidates = () => {
       const response = await fetch('http://localhost:5000/api/candidates');
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched candidates:', data); // Debug log
         setCandidates(data);
         setFilteredCandidates(data);
         calculateStats(data);
-      } else {
-        console.error('Failed to fetch');
       }
     } catch (error) {
       console.error('Error fetching candidates:', error);
     } finally {
-      setLoading(false); // ← IMPORTANT: Always set loading to false
+      setLoading(false);
     }
   };
 
@@ -64,7 +61,7 @@ const AllCandidates = () => {
       });
       
       if (response.ok) {
-        fetchAllCandidates(); // Refresh the list
+        fetchAllCandidates();
         setDeleteConfirm({ email, fullName });
         setTimeout(() => setDeleteConfirm(null), 3000);
       } else {
@@ -94,13 +91,18 @@ const AllCandidates = () => {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // Show loading state
   if (loading) {
     return <div className="loading-container">Loading candidates...</div>;
   }
 
   return (
     <div className="all-candidates-container">
+      {/* Admin Badge */}
+      <div className="admin-badge">
+        <span className="admin-icon">👑</span>
+        <span>Admin Portal | All Candidates</span>
+      </div>
+
       {deleteConfirm && (
         <div className="success-toast">
           ✅ {deleteConfirm.fullName} has been deleted successfully!
@@ -163,53 +165,57 @@ const AllCandidates = () => {
             <div className="table-header-info">
               <span>Showing {filteredCandidates.length} of {candidates.length} candidates</span>
             </div>
-            <table className="candidates-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Full Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Position</th>
-                  <th>Status</th>
-                  <th>Registered On</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCandidates.map((candidate, index) => (
-                  <tr key={candidate._id}>
-                    <td>{index + 1}</td>
-                    <td className="candidate-name">{candidate.fullName}</td>
-                    <td>{candidate.email}</td>
-                    <td>{candidate.phone}</td>
-                    <td>{candidate.positionApplied}</td>
-                    <td>
-                      <span className={`status-badge ${getStatusColor(candidate.overallStatus)}`}>
-                        {candidate.overallStatus}
-                      </span>
-                    </td>
-                    <td>{formatDate(candidate.createdAt)}</td>
-                    <td className="actions-cell">
-                      <button 
-                        className="view-btn"
-                        onClick={() => handleViewProfile(candidate.email)}
-                        title="View Profile"
-                      >
-                        👁️ View
-                      </button>
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDelete(candidate.email, candidate.fullName)}
-                        title="Delete Candidate"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </td>
+            
+            {/* Table with wrapper for horizontal scroll */}
+            <div className="candidates-table-wrapper">
+              <table className="candidates-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Registered On</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredCandidates.map((candidate, index) => (
+                    <tr key={candidate._id}>
+                      <td>{index + 1}</td>
+                      <td className="candidate-name">{candidate.fullName}</td>
+                      <td>{candidate.email}</td>
+                      <td>{candidate.phone}</td>
+                      <td>{candidate.positionApplied}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusColor(candidate.overallStatus)}`}>
+                          {candidate.overallStatus}
+                        </span>
+                      </td>
+                      <td>{formatDate(candidate.createdAt)}</td>
+                      <td className="actions-cell">
+                        <button 
+                          className="view-btn"
+                          onClick={() => handleViewProfile(candidate.email)}
+                          title="View Profile"
+                        >
+                          👁️ View
+                        </button>
+                        <button 
+                          className="delete-btn"
+                          onClick={() => handleDelete(candidate.email, candidate.fullName)}
+                          title="Delete Candidate"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
         

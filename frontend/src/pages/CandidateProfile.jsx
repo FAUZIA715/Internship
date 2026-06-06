@@ -8,41 +8,71 @@ const CandidateProfile = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [updating, setUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!email) return;
-      setLoading(true);
-      
-      try {
-        // Fetch candidate profile
-        const profileRes = await fetch(`http://localhost:5000/api/candidates/${email}`);
-        if (!profileRes.ok) {
-          setError('Candidate not found');
-          setLoading(false);
-          return;
-        }
-        const candidateData = await profileRes.json();
-        console.log('Candidate data:', candidateData);
-        setCandidate(candidateData);
+    fetchData();
+  }, [email]);
 
-        // Fetch verification status
+  const fetchData = async () => {
+    if (!email) return;
+    setLoading(true);
+    try {
+      const profileRes = await fetch(`http://localhost:5000/api/candidates/${email}`);
+      if (!profileRes.ok) {
+        setError('Candidate not found');
+        setLoading(false);
+        return;
+      }
+      const candidateData = await profileRes.json();
+      setCandidate(candidateData);
+
+      const statusRes = await fetch(`http://localhost:5000/api/candidates/verification-status/${email}`);
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        setStatus(statusData);
+      }
+    } catch (error) {
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateVerificationStatus = async (type, value) => {
+    setUpdating(true);
+    setUpdateMessage('');
+    
+    try {
+      const updateData = {};
+      updateData[type] = value;
+      
+      const response = await fetch(`http://localhost:5000/api/candidates/verification/${email}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (response.ok) {
+        setUpdateMessage(`✅ ${type} status updated to ${value}`);
+        // Refresh status
         const statusRes = await fetch(`http://localhost:5000/api/candidates/verification-status/${email}`);
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           setStatus(statusData);
         }
-      } catch (error) {
-        console.error('Error:', error);
-        setError('Failed to load data');
-      } finally {
-        setLoading(false);
+        setTimeout(() => setUpdateMessage(''), 3000);
+      } else {
+        setUpdateMessage('❌ Update failed');
       }
-    };
-
-    fetchData();
-  }, [email]);
+    } catch (error) {
+      setUpdateMessage('❌ Server error');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const getStatusBadge = (statusValue) => {
     const colors = {
@@ -67,7 +97,19 @@ const CandidateProfile = () => {
       </div>
 
       <div className="profile-card">
+        {/* Admin Badge */}
+        <div className="admin-badge">
+          <span className="admin-icon">👑</span>
+          <span>Admin Dashboard | Update Verification Status</span>
+        </div>
+
         <h2>Candidate Profile</h2>
+        
+        {updateMessage && (
+          <div className={`message ${updateMessage.includes('✅') ? 'success' : 'error'}`}>
+            {updateMessage}
+          </div>
+        )}
         
         {candidate && (
           <>
@@ -103,20 +145,18 @@ const CandidateProfile = () => {
                 <span>{candidate.experience}</span>
               </div>
               
-              {/* Resume Section - Only Download Button */}
+              {/* Resume Section */}
               <div className="info-row">
                 <span className="label">Resume:</span>
                 <span>
                   {candidate.resumeUrl ? (
-                    <div className="resume-actions">
-                      <a 
-                        href={`http://localhost:5000${candidate.resumeUrl}`} 
-                        download
-                        className="download-resume-link"
-                      >
-                        ⬇️ Download Resume
-                      </a>
-                    </div>
+                    <a 
+                      href={`http://localhost:5000${candidate.resumeUrl}`} 
+                      download
+                      className="download-resume-link"
+                    >
+                      ⬇️ Download Resume
+                    </a>
                   ) : (
                     <span className="no-resume">No resume uploaded</span>
                   )}
@@ -124,18 +164,22 @@ const CandidateProfile = () => {
               </div>
             </div>
 
-            {/* Verification Status Section */}
+            {/* Verification Status Section - With Admin Update Controls */}
             {status && (
               <div className="verification-section">
                 <h3>✅ Verification Status</h3>
+                
+                {/* Current Status Table */}
                 <table className="status-table">
                   <thead>
                     <tr>
                       <th>Verification Type</th>
-                      <th>Status</th>
+                      <th>Current Status</th>
+                      <th>Update Status</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {/* Aadhaar Row */}
                     <tr>
                       <td>Aadhaar Verification</td>
                       <td>
@@ -143,7 +187,32 @@ const CandidateProfile = () => {
                           {status.aadhaar}
                         </span>
                       </td>
+                      <td>
+                        <div className="update-controls">
+                          <select 
+                            defaultValue={status.aadhaar}
+                            className="status-select"
+                            id="aadhaar-select"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                          <button 
+                            className="update-btn"
+                            onClick={() => {
+                              const select = document.getElementById('aadhaar-select');
+                              updateVerificationStatus('aadhaar', select.value);
+                            }}
+                            disabled={updating}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </td>
                     </tr>
+
+                    {/* PAN Row */}
                     <tr>
                       <td>PAN Verification</td>
                       <td>
@@ -151,7 +220,32 @@ const CandidateProfile = () => {
                           {status.pan}
                         </span>
                       </td>
+                      <td>
+                        <div className="update-controls">
+                          <select 
+                            defaultValue={status.pan}
+                            className="status-select"
+                            id="pan-select"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                          <button 
+                            className="update-btn"
+                            onClick={() => {
+                              const select = document.getElementById('pan-select');
+                              updateVerificationStatus('pan', select.value);
+                            }}
+                            disabled={updating}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </td>
                     </tr>
+
+                    {/* Education Row */}
                     <tr>
                       <td>Education Verification</td>
                       <td>
@@ -159,7 +253,33 @@ const CandidateProfile = () => {
                           {status.education}
                         </span>
                       </td>
+                      <td>
+                        <div className="update-controls">
+                          <select 
+                            defaultValue={status.education}
+                            className="status-select"
+                            id="education-select"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Partially Verified">Partially Verified</option>
+                          </select>
+                          <button 
+                            className="update-btn"
+                            onClick={() => {
+                              const select = document.getElementById('education-select');
+                              updateVerificationStatus('education', select.value);
+                            }}
+                            disabled={updating}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </td>
                     </tr>
+
+                    {/* Employment Row */}
                     <tr>
                       <td>Employment Verification</td>
                       <td>
@@ -167,7 +287,33 @@ const CandidateProfile = () => {
                           {status.employment}
                         </span>
                       </td>
+                      <td>
+                        <div className="update-controls">
+                          <select 
+                            defaultValue={status.employment}
+                            className="status-select"
+                            id="employment-select"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Partially Verified">Partially Verified</option>
+                          </select>
+                          <button 
+                            className="update-btn"
+                            onClick={() => {
+                              const select = document.getElementById('employment-select');
+                              updateVerificationStatus('employment', select.value);
+                            }}
+                            disabled={updating}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </td>
                     </tr>
+
+                    {/* Overall Status Row */}
                     <tr className="overall-row">
                       <td><strong>Overall Verification Result</strong></td>
                       <td>
@@ -175,13 +321,14 @@ const CandidateProfile = () => {
                           {status.overall}
                         </span>
                       </td>
+                      <td>(Auto-calculated)</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             )}
 
-            {/* Edit Profile Button */}
+            {/* Buttons */}
             <div className="button-group">
               <button 
                 onClick={() => navigate(`/edit-profile/${candidate.email}`)} 
