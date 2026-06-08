@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const {
-  register,
   login,
   changePassword,
   getProfile,
@@ -13,12 +12,10 @@ const {
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
+// Public routes
+router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:resetToken', resetPassword);
-
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
 
 // Protected routes
 router.put('/change-password', protect, changePassword);
@@ -27,7 +24,7 @@ router.get('/profile', protect, getProfile);
 // Admin only routes
 router.post('/select-candidate', protect, authorize('admin'), selectCandidate);
 
-// Super admin creates another admin
+// Admin creates another admin
 router.post('/create-admin', protect, authorize('admin'), async (req, res) => {
   try {
     const { name, email, password } = req.body;
