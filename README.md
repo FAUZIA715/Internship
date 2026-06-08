@@ -76,7 +76,7 @@ Admin Workspace is a complete administration module for the VeriFlow Automated B
 - Node.js installed
 - MongoDB installed and running
 
-### Backend Setup
+### Setup
 ```bash
 cd backend
 npm install
