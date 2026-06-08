@@ -1,7 +1,7 @@
-# 📋 Candidate Management Module
+# 👑 Admin Workspace
 
 ## Overview
-The Candidate Management Module is a core component of the VeriFlow Automated Background Verification System. It enables administrators to manage candidate information, track verification status, and handle candidate documents efficiently.
+Admin Workspace is a complete administration module for the VeriFlow Automated Background Verification System. It combines Candidate Management, Admin Dashboard, and Email Notification features into one unified interface.
 
 ## Features
 
@@ -23,28 +23,38 @@ The Candidate Management Module is a core component of the VeriFlow Automated Ba
 - **Employment Verification** - Update status (Pending/Verified/Rejected/Partially Verified)
 - **Overall Status** - Auto-calculated based on individual verifications
 
-### 🔍 Admin Dashboard Features
-- **View Candidate List** - Complete list of all registered candidates
-- **Search & Filter** - Quick search by name or email
-- **Review Candidate Details** - Complete profile view
-- **Update Verification Status** - Admin can update any verification status
-- **Real-time Updates** - Status changes reflect immediately
+### 🎯 Admin Workspace Features
+- **Dashboard Overview** - Stats cards (Total, Verified, Pending, Completion %)
+- **Quick Actions** - Register Candidate, View All Candidates, Verification Status, Reports
+- **Recent Activity** - List of recent candidates with status
+- **Smart Navigation** - Back button remembers where you came from
+
+### 📧 Email Notification System
+- **Manual Email** - Admin can send emails to candidates from profile page
+- **Email Templates** - 5 pre-defined templates (Verification Complete, Document Request, Interview Call, Pending, Rejection)
+- **Email Composer** - Rich editor with subject and message fields
+- **Notification History** - Track all sent emails
+- **Demo Mode** - Emails logged to console.
 
 ## 📊 Dashboard Statistics
 - Total candidates count
 - Verified candidates count
 - Pending candidates count
+- Completion percentage
 
 ## 🛠️ Tech Stack
-- **Frontend:** React.js, Vite, CSS
+- **Frontend:** React.js, Vite, CSS (Poppins font)
 - **Backend:** Node.js, Express.js
 - **Database:** MongoDB
 - **File Upload:** Multer
+- **Email (Demo):** Console logging (SMTP ready)
 
 ## 🔗 API Endpoints
+
+### Candidate APIs
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/candidates/register` | Register new candidate |
+| POST | `/api/candidates/register` | Register new candidate with resume |
 | GET | `/api/candidates` | Get all candidates |
 | GET | `/api/candidates/:email` | Get candidate by email |
 | PUT | `/api/candidates/update/:email` | Update candidate profile |
@@ -53,9 +63,21 @@ The Candidate Management Module is a core component of the VeriFlow Automated Ba
 | PUT | `/api/candidates/verification/:email` | Update verification status |
 | GET | `/api/candidates/resume/:email` | Download resume |
 
+### Notification APIs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/notifications/send` | Send email to candidate |
+| GET | `/api/notifications/history` | Get all notification history |
+| GET | `/api/notifications/history/:email` | Get history for specific candidate |
+
 ## 🚀 How to Run
+
+### Prerequisites
+- Node.js installed
+- MongoDB installed and running
+
+### Backend Setup
 ```bash
-# Backend
 cd backend
 npm install
 npm run dev

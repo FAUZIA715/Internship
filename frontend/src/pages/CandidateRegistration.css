@@ -1,0 +1,21 @@
+.back-to-dashboard {
+  max-width: 800px;
+  margin: 20px auto 0 auto;
+  padding: 0 20px;
+}
+
+.back-dashboard-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: auto;
+}
+
+.back-dashboard-btn:hover {
+  background: #4b5563;
+}

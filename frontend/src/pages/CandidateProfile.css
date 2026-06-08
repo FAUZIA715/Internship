@@ -290,3 +290,12 @@
     width: 100%;
   }
 }
+.email-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981, #059669);
+  margin-top: 0;
+}
+
+.email-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}

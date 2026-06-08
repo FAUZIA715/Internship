@@ -316,12 +316,6 @@ const CandidateForm = () => {
           {loading ? 'Registering...' : '✨ Register Candidate'}
         </button>
       </form>
-
-      <div className="view-all-container">
-        <button className="view-all-btn" onClick={() => navigate('/candidates')}>
-          📋 View All Candidates
-        </button>
-      </div>
     </div>
   );
 };

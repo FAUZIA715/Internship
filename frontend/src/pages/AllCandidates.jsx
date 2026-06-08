@@ -197,12 +197,11 @@ const AllCandidates = () => {
                       <td>{formatDate(candidate.createdAt)}</td>
                       <td className="actions-cell">
                         <button 
-                          className="view-btn"
-                          onClick={() => handleViewProfile(candidate.email)}
-                          title="View Profile"
-                        >
-                          👁️ View
-                        </button>
+  className="view-btn"
+  onClick={() => navigate(`/profile/${candidate.email}`, { state: { from: 'candidates' } })}
+>
+  👁️ View
+</button>
                         <button 
                           className="delete-btn"
                           onClick={() => handleDelete(candidate.email, candidate.fullName)}
@@ -219,11 +218,11 @@ const AllCandidates = () => {
           </>
         )}
         
-        <div className="bottom-actions">
-          <button className="back-btn" onClick={() => navigate('/register')}>
-            ← Back to Registration
-          </button>
-        </div>
+<div className="bottom-actions">
+  <button className="back-btn" onClick={() => navigate('/dashboard')}>
+    ← Back to Dashboard
+  </button>
+</div>
       </div>
     </div>
   );

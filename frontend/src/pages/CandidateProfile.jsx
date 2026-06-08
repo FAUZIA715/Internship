@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import './CandidateProfile.css';
 
 const CandidateProfile = () => {
   const { email } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [candidate, setCandidate] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
-  const navigate = useNavigate();
+
+  // Get where we came from (dashboard or candidates)
+  const from = location.state?.from || 'candidates';
 
   useEffect(() => {
     fetchData();
@@ -57,7 +61,6 @@ const CandidateProfile = () => {
       
       if (response.ok) {
         setUpdateMessage(`✅ ${type} status updated to ${value}`);
-        // Refresh status
         const statusRes = await fetch(`http://localhost:5000/api/candidates/verification-status/${email}`);
         if (statusRes.ok) {
           const statusData = await statusRes.json();
@@ -71,6 +74,39 @@ const CandidateProfile = () => {
       setUpdateMessage('❌ Server error');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Send Manual Email to Candidate
+  const sendManualEmail = async (candidateEmail, candidateName) => {
+    const defaultMessage = `Dear ${candidateName},\n\nYour background verification has been successfully completed!\n\nWe will contact you shortly for the interview.\n\nBest Regards,\nHR Team`;
+    
+    const message = prompt(`Send email to ${candidateName} (${candidateEmail}):\n\nEnter message:`, defaultMessage);
+    
+    if (message) {
+      try {
+        const response = await fetch('http://localhost:5000/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: candidateEmail, fullName: candidateName, message })
+        });
+        
+        if (response.ok) {
+          alert(`✅ Email sent to ${candidateName} successfully!`);
+        } else {
+          alert('❌ Failed to send email');
+        }
+      } catch (error) {
+        alert('❌ Error sending email');
+      }
+    }
+  };
+
+  const handleGoBack = () => {
+    if (from === 'dashboard') {
+      navigate('/dashboard');
+    } else {
+      navigate('/candidates');
     }
   };
 
@@ -89,18 +125,17 @@ const CandidateProfile = () => {
 
   return (
     <div className="profile-container">
-      {/* Back Button at Top */}
+      {/* Smart Back Button */}
       <div className="top-bar">
-        <button className="back-top-btn" onClick={() => navigate('/candidates')}>
-          ← Back to All Candidates
+        <button className="back-top-btn" onClick={handleGoBack}>
+          ← Back to {from === 'dashboard' ? 'Dashboard' : 'All Candidates'}
         </button>
       </div>
 
       <div className="profile-card">
-        {/* Admin Badge */}
         <div className="admin-badge">
           <span className="admin-icon">👑</span>
-          <span>Admin Dashboard | Update Verification Status</span>
+          <span>Admin Portal | Update Verification Status</span>
         </div>
 
         <h2>Candidate Profile</h2>
@@ -113,7 +148,6 @@ const CandidateProfile = () => {
         
         {candidate && (
           <>
-            {/* Personal Information Section */}
             <div className="profile-section">
               <h3>📋 Personal Information</h3>
               <div className="info-row">
@@ -145,7 +179,6 @@ const CandidateProfile = () => {
                 <span>{candidate.experience}</span>
               </div>
               
-              {/* Resume Section */}
               <div className="info-row">
                 <span className="label">Resume:</span>
                 <span>
@@ -164,12 +197,9 @@ const CandidateProfile = () => {
               </div>
             </div>
 
-            {/* Verification Status Section - With Admin Update Controls */}
             {status && (
               <div className="verification-section">
                 <h3>✅ Verification Status</h3>
-                
-                {/* Current Status Table */}
                 <table className="status-table">
                   <thead>
                     <tr>
@@ -182,30 +212,15 @@ const CandidateProfile = () => {
                     {/* Aadhaar Row */}
                     <tr>
                       <td>Aadhaar Verification</td>
-                      <td>
-                        <span className="status-badge" style={getStatusBadge(status.aadhaar)}>
-                          {status.aadhaar}
-                        </span>
-                      </td>
+                      <td><span className="status-badge" style={getStatusBadge(status.aadhaar)}>{status.aadhaar}</span></td>
                       <td>
                         <div className="update-controls">
-                          <select 
-                            defaultValue={status.aadhaar}
-                            className="status-select"
-                            id="aadhaar-select"
-                          >
+                          <select defaultValue={status.aadhaar} className="status-select" id="aadhaar-select">
                             <option value="Pending">Pending</option>
                             <option value="Verified">Verified</option>
                             <option value="Rejected">Rejected</option>
                           </select>
-                          <button 
-                            className="update-btn"
-                            onClick={() => {
-                              const select = document.getElementById('aadhaar-select');
-                              updateVerificationStatus('aadhaar', select.value);
-                            }}
-                            disabled={updating}
-                          >
+                          <button className="update-btn" onClick={() => updateVerificationStatus('aadhaar', document.getElementById('aadhaar-select').value)} disabled={updating}>
                             Update
                           </button>
                         </div>
@@ -215,30 +230,15 @@ const CandidateProfile = () => {
                     {/* PAN Row */}
                     <tr>
                       <td>PAN Verification</td>
-                      <td>
-                        <span className="status-badge" style={getStatusBadge(status.pan)}>
-                          {status.pan}
-                        </span>
-                      </td>
+                      <td><span className="status-badge" style={getStatusBadge(status.pan)}>{status.pan}</span></td>
                       <td>
                         <div className="update-controls">
-                          <select 
-                            defaultValue={status.pan}
-                            className="status-select"
-                            id="pan-select"
-                          >
+                          <select defaultValue={status.pan} className="status-select" id="pan-select">
                             <option value="Pending">Pending</option>
                             <option value="Verified">Verified</option>
                             <option value="Rejected">Rejected</option>
                           </select>
-                          <button 
-                            className="update-btn"
-                            onClick={() => {
-                              const select = document.getElementById('pan-select');
-                              updateVerificationStatus('pan', select.value);
-                            }}
-                            disabled={updating}
-                          >
+                          <button className="update-btn" onClick={() => updateVerificationStatus('pan', document.getElementById('pan-select').value)} disabled={updating}>
                             Update
                           </button>
                         </div>
@@ -248,31 +248,16 @@ const CandidateProfile = () => {
                     {/* Education Row */}
                     <tr>
                       <td>Education Verification</td>
-                      <td>
-                        <span className="status-badge" style={getStatusBadge(status.education)}>
-                          {status.education}
-                        </span>
-                      </td>
+                      <td><span className="status-badge" style={getStatusBadge(status.education)}>{status.education}</span></td>
                       <td>
                         <div className="update-controls">
-                          <select 
-                            defaultValue={status.education}
-                            className="status-select"
-                            id="education-select"
-                          >
+                          <select defaultValue={status.education} className="status-select" id="education-select">
                             <option value="Pending">Pending</option>
                             <option value="Verified">Verified</option>
                             <option value="Rejected">Rejected</option>
                             <option value="Partially Verified">Partially Verified</option>
                           </select>
-                          <button 
-                            className="update-btn"
-                            onClick={() => {
-                              const select = document.getElementById('education-select');
-                              updateVerificationStatus('education', select.value);
-                            }}
-                            disabled={updating}
-                          >
+                          <button className="update-btn" onClick={() => updateVerificationStatus('education', document.getElementById('education-select').value)} disabled={updating}>
                             Update
                           </button>
                         </div>
@@ -282,45 +267,26 @@ const CandidateProfile = () => {
                     {/* Employment Row */}
                     <tr>
                       <td>Employment Verification</td>
-                      <td>
-                        <span className="status-badge" style={getStatusBadge(status.employment)}>
-                          {status.employment}
-                        </span>
-                      </td>
+                      <td><span className="status-badge" style={getStatusBadge(status.employment)}>{status.employment}</span></td>
                       <td>
                         <div className="update-controls">
-                          <select 
-                            defaultValue={status.employment}
-                            className="status-select"
-                            id="employment-select"
-                          >
+                          <select defaultValue={status.employment} className="status-select" id="employment-select">
                             <option value="Pending">Pending</option>
                             <option value="Verified">Verified</option>
                             <option value="Rejected">Rejected</option>
                             <option value="Partially Verified">Partially Verified</option>
                           </select>
-                          <button 
-                            className="update-btn"
-                            onClick={() => {
-                              const select = document.getElementById('employment-select');
-                              updateVerificationStatus('employment', select.value);
-                            }}
-                            disabled={updating}
-                          >
+                          <button className="update-btn" onClick={() => updateVerificationStatus('employment', document.getElementById('employment-select').value)} disabled={updating}>
                             Update
                           </button>
                         </div>
                       </td>
                     </tr>
 
-                    {/* Overall Status Row */}
+                    {/* Overall Row */}
                     <tr className="overall-row">
                       <td><strong>Overall Verification Result</strong></td>
-                      <td>
-                        <span className="status-badge" style={getStatusBadge(status.overall)}>
-                          {status.overall}
-                        </span>
-                      </td>
+                      <td><span className="status-badge" style={getStatusBadge(status.overall)}>{status.overall}</span></td>
                       <td>(Auto-calculated)</td>
                     </tr>
                   </tbody>
@@ -328,7 +294,7 @@ const CandidateProfile = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - Edit Profile & Send Email */}
             <div className="button-group">
               <button 
                 onClick={() => navigate(`/edit-profile/${candidate.email}`)} 
@@ -336,6 +302,12 @@ const CandidateProfile = () => {
               >
                 ✏️ Edit Profile
               </button>
+<button 
+  onClick={() => navigate(`/send-email/${candidate.email}`)} 
+  className="email-btn"
+>
+  📧 Send Email
+</button>
             </div>
           </>
         )}
