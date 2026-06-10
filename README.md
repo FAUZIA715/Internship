@@ -1,28 +1,29 @@
 # HR Workspace
 
 ## Overview
-HR Workspace is a complete administration module for HR teams to manage candidate document verification and track verification status.
+HR Workspace is a complete solution for HR teams to manage candidate document verification. Auto-verification for Aadhaar, PAN, Address combined with manual HR verification for Degree and Employment.
 
 ## Features
 
-### Candidate Management
-- View all candidates with basic details
-- Search candidates by name or email
-- Filter by verification status (Pending/Approved/Rejected)
-- View complete candidate profile
+### HR Dashboard
+- Total candidates, pending reviews, approved, rejected
+- Department-wise breakdown
+- Quick filter buttons
 
 ### Document Verification
-- View uploaded documents (Aadhaar, PAN, Degree, Employment, Address)
-- Verify degree certificate with one click
-- Compare candidate details with document details
-- Track document upload status
+- Auto-verification: Aadhaar, PAN, Address
+- HR manual verification: Degree, Employment
+- View uploaded documents
+- Real-time status updates
 
-### Verification Tracking
-- Auto-verification status for each document
-- HR review with Match/Mismatch options
-- Overall verification status
-- Generate BGV report
+### Reporting
+- Generate BGV report (available after HR approval)
 - Download BGV report
+
+## Tech Stack
+- Frontend: React.js, Vite, CSS
+- Backend: Node.js, Express.js
+- Database: MongoDB Atlas
 
 ## API Endpoints
 
@@ -30,23 +31,18 @@ HR Workspace is a complete administration module for HR teams to manage candidat
 |--------|----------|-------------|
 | GET | `/api/hr/candidates` | Get all candidates |
 | GET | `/api/hr/candidates/:id` | Get candidate by ID |
-| PUT | `/api/hr/candidates/:id/compare` | Update Match/Mismatch |
-| PUT | `/api/hr/candidates/:id/verify-degree` | Verify degree |
-| POST | `/api/hr/candidates/:id/generate-report` | Generate report |
-
-## Tech Stack
-- Frontend: React.js, Vite, CSS
-- Backend: Node.js, Express.js
-- Database: MongoDB
+| PUT | `/api/hr/candidates/:id/update-degree` | Update degree status |
+| PUT | `/api/hr/candidates/:id/update-employment` | Update employment status |
+| POST | `/api/hr/candidates/:id/generate-report` | Generate BGV report |
+| POST | `/api/hr/sample-data` | Add sample data |
 
 ## How to Run
 
+### Backend
 ```bash
-# Backend
 cd backend
 npm install
 npm run dev
-
 # Frontend
 cd frontend
 npm install
