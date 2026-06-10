@@ -8,18 +8,21 @@ const CandidateDetails = () => {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [showDocModal, setShowDocModal] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [degreeStatus, setDegreeStatus] = useState('');
+  const [employmentStatus, setEmploymentStatus] = useState('');
 
   useEffect(() => {
     fetchCandidate();
   }, [id]);
 
   const fetchCandidate = async () => {
+    setLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}`);
       const data = await response.json();
       setCandidate(data);
+      setDegreeStatus(data.degreeStatus || 'Pending');
+      setEmploymentStatus(data.employmentStatus || 'Pending');
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -27,65 +30,138 @@ const CandidateDetails = () => {
     }
   };
 
-  // View document - opens in new tab
   const handleViewDocument = (docType, docUrl) => {
     if (!docUrl) {
-      alert(`❌ No ${docType} document uploaded by candidate`);
+      alert(`❌ No ${docType} document uploaded`);
       return;
     }
     window.open(`http://localhost:5000${docUrl}`, '_blank');
   };
 
-  // Update Match/Mismatch
-  const updateMatch = async (field, value) => {
+  // Update Degree Status
+  const handleUpdateDegree = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/compare`, {
+      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-degree`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value })
+        body: JSON.stringify({ status: degreeStatus })
       });
+      
       if (response.ok) {
-        setMessage(`✅ ${field} marked as ${value}`);
+        const data = await response.json();
+        setMessage(`✅ Degree status updated to ${degreeStatus}`);
+        setCandidate(data.candidate);
         setTimeout(() => setMessage(''), 3000);
         fetchCandidate();
       } else {
-        setMessage(`❌ Update failed`);
+        setMessage('❌ Update failed');
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
-      setMessage('❌ Server error');
+      setMessage('❌ Update failed');
       setTimeout(() => setMessage(''), 3000);
     }
   };
 
-  // Generate Report (calls friend's API - placeholder)
-  const generateReport = async () => {
-    if (candidate?.hrReviewStatus !== 'Approved') {
-      setMessage('❌ Cannot generate report. Candidate not approved yet.');
+  // Update Employment Status
+  const handleUpdateEmployment = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-employment`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: employmentStatus })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMessage(`✅ Employment status updated to ${employmentStatus}`);
+        setCandidate(data.candidate);
+        setTimeout(() => setMessage(''), 3000);
+        fetchCandidate();
+      } else {
+        setMessage('❌ Update failed');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (err) {
+      setMessage('❌ Update failed');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  // Check if ALL 5 documents have been verified (not pending) - regardless of Verified or Rejected
+  const isAllDocumentsProcessed = () => {
+    if (!candidate) return false;
+    return (
+      candidate.autoVerification?.aadhaar !== 'Pending' &&
+      candidate.autoVerification?.pan !== 'Pending' &&
+      candidate.autoVerification?.address !== 'Pending' &&
+      candidate.degreeStatus !== 'Pending' &&
+      candidate.employmentStatus !== 'Pending'
+    );
+  };
+
+  // Get overall status message
+  const getOverallStatus = () => {
+    if (!isAllDocumentsProcessed()) return 'Verification In Progress';
+    
+    const allVerified = (
+      candidate.autoVerification?.aadhaar === 'Verified' &&
+      candidate.autoVerification?.pan === 'Verified' &&
+      candidate.autoVerification?.address === 'Verified' &&
+      candidate.degreeStatus === 'Verified' &&
+      candidate.employmentStatus === 'Verified'
+    );
+    
+    return allVerified ? 'All Documents Verified ✅' : 'Some Documents Rejected ❌';
+  };
+
+  // Generate Report - Only when all documents processed
+  const handleGenerateReport = async () => {
+    if (!isAllDocumentsProcessed()) {
+      setMessage('❌ Cannot generate report. Please wait for all document verifications to complete.');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
-    // This will call your friend's report generation API
-    alert(`📄 BGV Report generation requested for ${candidate.fullName} (Friend's module will handle this)`);
-    setMessage('✅ Report generation requested');
+    
+    const allVerified = (
+      candidate.autoVerification?.aadhaar === 'Verified' &&
+      candidate.autoVerification?.pan === 'Verified' &&
+      candidate.autoVerification?.address === 'Verified' &&
+      candidate.degreeStatus === 'Verified' &&
+      candidate.employmentStatus === 'Verified'
+    );
+    
+    const reportType = allVerified ? 'Verification Completed' : 'Verification Completed with Issues';
+    
+    alert(`📄 ${reportType} Report generated for ${candidate.fullName}`);
+    setMessage(`✅ ${reportType} Report generated for ${candidate.fullName}`);
+    
+    // Mark report as generated so download button becomes enabled
+    setCandidate({ ...candidate, reportGenerated: true });
+    
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // Download Report (calls friend's API - placeholder)
-  const downloadReport = () => {
+  // Download Report - Available only after Generate is clicked
+  const handleDownloadReport = () => {
     if (!candidate?.reportGenerated) {
       alert('Please generate the report first.');
       return;
     }
-    // This will call your friend's download API
-    alert(`📥 Downloading BGV report for ${candidate.fullName} (Friend's module will handle this)`);
+    const allVerified = (
+      candidate.autoVerification?.aadhaar === 'Verified' &&
+      candidate.autoVerification?.pan === 'Verified' &&
+      candidate.autoVerification?.address === 'Verified' &&
+      candidate.degreeStatus === 'Verified' &&
+      candidate.employmentStatus === 'Verified'
+    );
+    const reportType = allVerified ? 'Verification Completed' : 'Verification Completed with Issues';
+    alert(`📥 Downloading ${reportType} report for ${candidate.fullName}`);
   };
 
   const getBadge = (status) => {
     if (status === 'Verified') return <span className="badge verified">✅ Verified</span>;
-    if (status === 'Approved') return <span className="badge approved">✅ Approved</span>;
-    if (status === 'Match') return <span className="badge match">✅ Match</span>;
-    if (status === 'Mismatch') return <span className="badge mismatch">❌ Mismatch</span>;
+    if (status === 'Rejected') return <span className="badge rejected">❌ Rejected</span>;
     return <span className="badge pending">⏳ Pending</span>;
   };
 
@@ -93,23 +169,16 @@ const CandidateDetails = () => {
     return uploaded ? <span className="upload-status uploaded">✅ Uploaded</span> : <span className="upload-status missing">❌ Missing</span>;
   };
 
-  const isAutoComplete = () => {
-    if (!candidate?.autoVerification) return false;
-    const v = candidate.autoVerification;
-    return v.aadhaar === 'Verified' && v.pan === 'Verified' && v.degree === 'Verified' && 
-           v.employment === 'Verified' && v.address === 'Verified';
-  };
-
   if (loading) return <div className="loading-container">Loading...</div>;
   if (!candidate) return <div className="error-container">Candidate not found</div>;
 
-  const autoComplete = isAutoComplete();
+  const allProcessed = isAllDocumentsProcessed();
 
   return (
     <div className="candidate-details-container">
       <div className="details-header">
         <button className="back-btn" onClick={() => navigate('/candidates-list')}>← Back to Candidates</button>
-        <h1>Candidate Details</h1>
+        <h1>{candidate.fullName}</h1>
       </div>
 
       {message && <div className="message success">{message}</div>}
@@ -142,7 +211,7 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Document View Buttons - HR can view actual documents */}
+        {/* Document View Buttons */}
         <div className="section">
           <h3>📎 View Uploaded Documents</h3>
           <div className="doc-buttons-grid">
@@ -164,109 +233,82 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Auto Verification Results */}
+        {/* Auto Verification Results - Aadhaar, PAN, Address (Read Only) */}
         <div className="section">
           <h3>🤖 Auto Verification Results</h3>
-          <div className="verif-grid">
-            <div className="verif-item">Aadhaar: {getBadge(candidate.autoVerification?.aadhaar)}</div>
-            <div className="verif-item">PAN: {getBadge(candidate.autoVerification?.pan)}</div>
-            <div className="verif-item">Degree: {getBadge(candidate.autoVerification?.degree)}</div>
-            <div className="verif-item">Employment: {getBadge(candidate.autoVerification?.employment)}</div>
-            <div className="verif-item">Address: {getBadge(candidate.autoVerification?.address)}</div>
+          <div className="auto-verif-grid">
+            <div className="auto-verif-item">Aadhaar: {getBadge(candidate.autoVerification?.aadhaar)}</div>
+            <div className="auto-verif-item">PAN: {getBadge(candidate.autoVerification?.pan)}</div>
+            <div className="auto-verif-item">Address: {getBadge(candidate.autoVerification?.address)}</div>
           </div>
-          {!autoComplete && (
-            <div className="verification-progress">
-              <div className="progress-bar-bg">
-                <div className="progress-bar-fill" style={{ 
-                  width: `${Object.values(candidate.autoVerification || {}).filter(v => v === 'Verified').length * 20}%` 
-                }}></div>
-              </div>
-              <div className="progress-text">Verification in progress...</div>
-            </div>
-          )}
         </div>
 
-        {/* HR Review Section - Only after auto-verification complete */}
-        {autoComplete ? (
-          <div className="section hr-review">
-            <h3>👔 HR Review (Compare & Confirm)</h3>
-            <p className="review-note">📌 View documents above, then click Match or Mismatch</p>
-
-            {/* Name Match */}
-            <div className="compare-card">
-              <div className="compare-header">Name Match</div>
-              <div className="compare-row">
-                <div className="compare-side">Candidate Entered: <strong>{candidate.fullName}</strong></div>
-                <div className="compare-side">On Document: <strong>{candidate.fullName}</strong></div>
+        {/* HR Manual Verification - Degree & Employment */}
+        <div className="section">
+          <h3>👔 HR Manual Verification</h3>
+          <div className="hr-manual-grid">
+            {/* Degree Certificate */}
+            <div className="manual-card">
+              <div className="manual-title">🎓 Degree Certificate</div>
+              <div className="manual-status">Current: {getBadge(candidate.degreeStatus)}</div>
+              <div className="manual-controls">
+                <select 
+                  value={degreeStatus} 
+                  onChange={(e) => setDegreeStatus(e.target.value)} 
+                  className="status-select"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <button className="btn-update" onClick={handleUpdateDegree}>Update</button>
               </div>
-              <div className="compare-buttons">
-                <button className={`match-btn ${candidate.comparisonResults?.nameMatch === 'Match' ? 'active' : ''}`} onClick={() => updateMatch('nameMatch', 'Match')}>
-                  ✅ Match
-                </button>
-                <button className={`mismatch-btn ${candidate.comparisonResults?.nameMatch === 'Mismatch' ? 'active' : ''}`} onClick={() => updateMatch('nameMatch', 'Mismatch')}>
-                  ❌ Mismatch
-                </button>
-              </div>
-              <div className="match-status">{getBadge(candidate.comparisonResults?.nameMatch)}</div>
             </div>
 
-            {/* DOB Match */}
-            <div className="compare-card">
-              <div className="compare-header">Date of Birth Match</div>
-              <div className="compare-row">
-                <div className="compare-side">Candidate Entered: <strong>{new Date(candidate.dateOfBirth).toLocaleDateString()}</strong></div>
-                <div className="compare-side">On Document: <strong>{new Date(candidate.dateOfBirth).toLocaleDateString()}</strong></div>
+            {/* Employment Proof */}
+            <div className="manual-card">
+              <div className="manual-title">💼 Employment Proof</div>
+              <div className="manual-status">Current: {getBadge(candidate.employmentStatus)}</div>
+              <div className="manual-controls">
+                <select 
+                  value={employmentStatus} 
+                  onChange={(e) => setEmploymentStatus(e.target.value)} 
+                  className="status-select"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <button className="btn-update" onClick={handleUpdateEmployment}>Update</button>
               </div>
-              <div className="compare-buttons">
-                <button className={`match-btn ${candidate.comparisonResults?.dobMatch === 'Match' ? 'active' : ''}`} onClick={() => updateMatch('dobMatch', 'Match')}>
-                  ✅ Match
-                </button>
-                <button className={`mismatch-btn ${candidate.comparisonResults?.dobMatch === 'Mismatch' ? 'active' : ''}`} onClick={() => updateMatch('dobMatch', 'Mismatch')}>
-                  ❌ Mismatch
-                </button>
-              </div>
-              <div className="match-status">{getBadge(candidate.comparisonResults?.dobMatch)}</div>
-            </div>
-
-            {/* Address Match */}
-            <div className="compare-card">
-              <div className="compare-header">Address Match</div>
-              <div className="compare-row">
-                <div className="compare-side">Candidate Entered: <strong>{candidate.address}</strong></div>
-                <div className="compare-side">On Document: <strong>{candidate.address}</strong></div>
-              </div>
-              <div className="compare-buttons">
-                <button className={`match-btn ${candidate.comparisonResults?.addressMatch === 'Match' ? 'active' : ''}`} onClick={() => updateMatch('addressMatch', 'Match')}>
-                  ✅ Match
-                </button>
-                <button className={`mismatch-btn ${candidate.comparisonResults?.addressMatch === 'Mismatch' ? 'active' : ''}`} onClick={() => updateMatch('addressMatch', 'Mismatch')}>
-                  ❌ Mismatch
-                </button>
-              </div>
-              <div className="match-status">{getBadge(candidate.comparisonResults?.addressMatch)}</div>
             </div>
           </div>
-        ) : (
-          <div className="section hr-review-disabled">
-            <h3>👔 HR Review</h3>
-            <p>⏳ Auto-verification in progress. HR review will be available after all documents are verified.</p>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="action-buttons">
-          <button className="btn-generate" onClick={generateReport} disabled={candidate?.hrReviewStatus !== 'Approved'}>
-            <i className="fas fa-file-pdf"></i> Generate BGV Report
-          </button>
-          <button className="btn-download" onClick={downloadReport} disabled={!candidate?.reportGenerated}>
-            <i className="fas fa-download"></i> Download Report
-          </button>
         </div>
 
         {/* Overall Status */}
         <div className="overall-status">
-          <span>Overall HR Review Status:</span>
-          {getBadge(candidate.hrReviewStatus)}
+          <span>Overall Status:</span>
+          <span className={`status-text ${allProcessed ? (getOverallStatus().includes('Verified') ? 'success' : 'warning') : 'pending'}`}>
+            {getOverallStatus()}
+          </span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button 
+            className="btn-generate" 
+            onClick={handleGenerateReport} 
+            disabled={!allProcessed}
+          >
+            <i className="fas fa-file-pdf"></i> Generate BGV Report
+          </button>
+          <button 
+            className="btn-download" 
+            onClick={handleDownloadReport} 
+            disabled={!candidate?.reportGenerated}
+          >
+            <i className="fas fa-download"></i> Download Report
+          </button>
         </div>
       </div>
     </div>

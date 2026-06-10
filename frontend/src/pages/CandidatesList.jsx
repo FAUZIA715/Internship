@@ -10,11 +10,14 @@ const CandidatesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [departmentFilter, setDepartmentFilter] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const filter = params.get('filter');
+    const dept = params.get('department');
     if (filter) setActiveFilter(filter);
+    if (dept) setDepartmentFilter(dept);
   }, [location.search]);
 
   useEffect(() => {
@@ -23,7 +26,7 @@ const CandidatesList = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [candidates, searchTerm, activeFilter]);
+  }, [candidates, searchTerm, activeFilter, departmentFilter]);
 
   const fetchCandidates = async () => {
     try {
@@ -39,15 +42,28 @@ const CandidatesList = () => {
 
   const applyFilters = () => {
     let filtered = [...candidates];
+    
     if (activeFilter !== 'all') {
       filtered = filtered.filter(c => c.hrReviewStatus?.toLowerCase() === activeFilter.toLowerCase());
     }
+    
+    if (departmentFilter) {
+      if (departmentFilter === 'Engineering') {
+        filtered = filtered.filter(c => c.positionApplied?.includes('Developer') || c.positionApplied?.includes('Engineer'));
+      } else if (departmentFilter === 'Product') {
+        filtered = filtered.filter(c => c.positionApplied?.includes('Product'));
+      } else if (departmentFilter === 'Design') {
+        filtered = filtered.filter(c => c.positionApplied?.includes('UI') || c.positionApplied?.includes('UX'));
+      }
+    }
+    
     if (searchTerm) {
       filtered = filtered.filter(c =>
         c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+    
     setFilteredCandidates(filtered);
   };
 
@@ -72,27 +88,26 @@ const CandidatesList = () => {
   return (
     <div className="candidates-list-container">
       <div className="list-header">
-        <button className="back-btn" onClick={() => navigate('/hr-dashboard')}>← Back</button>
+        <button className="back-btn" onClick={() => navigate('/hr-dashboard')}>← Back to Dashboard</button>
         <h1>All Candidates</h1>
         <div className="search-box">
           <i className="fas fa-search"></i>
-          <input type="text" placeholder="Search name or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <input type="text" placeholder="Search by name or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
-      {/* Filter Tabs - Clean without counts inside */}
-      <div className="filter-tabs">
-        <button className={`filter-tab ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => navigate('/candidates-list?filter=all')}>
-          <i className="fas fa-list"></i> All
+      <div className="filter-buttons">
+        <button className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => { setActiveFilter('all'); navigate('/candidates-list?filter=all'); }}>
+          <i className="fas fa-list"></i> All ({candidates.length})
         </button>
-        <button className={`filter-tab ${activeFilter === 'pending' ? 'active' : ''}`} onClick={() => navigate('/candidates-list?filter=pending')}>
-          <i className="fas fa-clock"></i> Pending
+        <button className={`filter-btn ${activeFilter === 'pending' ? 'active' : ''}`} onClick={() => { setActiveFilter('pending'); navigate('/candidates-list?filter=pending'); }}>
+          <i className="fas fa-clock"></i> Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
         </button>
-        <button className={`filter-tab ${activeFilter === 'approved' ? 'active' : ''}`} onClick={() => navigate('/candidates-list?filter=approved')}>
-          <i className="fas fa-check-circle"></i> Approved
+        <button className={`filter-btn ${activeFilter === 'approved' ? 'active' : ''}`} onClick={() => { setActiveFilter('approved'); navigate('/candidates-list?filter=approved'); }}>
+          <i className="fas fa-check-circle"></i> Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
         </button>
-        <button className={`filter-tab ${activeFilter === 'rejected' ? 'active' : ''}`} onClick={() => navigate('/candidates-list?filter=rejected')}>
-          <i className="fas fa-times-circle"></i> Rejected
+        <button className={`filter-btn ${activeFilter === 'rejected' ? 'active' : ''}`} onClick={() => { setActiveFilter('rejected'); navigate('/candidates-list?filter=rejected'); }}>
+          <i className="fas fa-times-circle"></i> Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
         </button>
       </div>
 
