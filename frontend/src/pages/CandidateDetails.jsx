@@ -88,79 +88,38 @@ const CandidateDetails = () => {
     }
   };
 
-  // Check if ALL 5 documents have been verified (not pending) - regardless of Verified or Rejected
-  const isAllDocumentsProcessed = () => {
+  // Check if auto verification (Aadhaar, PAN, Address) is complete
+  const isAutoVerificationComplete = () => {
     if (!candidate) return false;
     return (
-      candidate.autoVerification?.aadhaar !== 'Pending' &&
-      candidate.autoVerification?.pan !== 'Pending' &&
-      candidate.autoVerification?.address !== 'Pending' &&
-      candidate.degreeStatus !== 'Pending' &&
-      candidate.employmentStatus !== 'Pending'
-    );
-  };
-
-  // Get overall status message
-  const getOverallStatus = () => {
-    if (!isAllDocumentsProcessed()) return 'Verification In Progress';
-    
-    const allVerified = (
       candidate.autoVerification?.aadhaar === 'Verified' &&
       candidate.autoVerification?.pan === 'Verified' &&
-      candidate.autoVerification?.address === 'Verified' &&
-      candidate.degreeStatus === 'Verified' &&
-      candidate.employmentStatus === 'Verified'
+      candidate.autoVerification?.address === 'Verified'
     );
-    
-    return allVerified ? 'All Documents Verified ✅' : 'Some Documents Rejected ❌';
   };
 
-  // Generate Report - Only when all documents processed
   const handleGenerateReport = async () => {
-    if (!isAllDocumentsProcessed()) {
-      setMessage('❌ Cannot generate report. Please wait for all document verifications to complete.');
+    if (candidate?.hrReviewStatus !== 'Approved') {
+      setMessage('❌ Cannot generate report. Candidate not approved by HR yet.');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
-    
-    const allVerified = (
-      candidate.autoVerification?.aadhaar === 'Verified' &&
-      candidate.autoVerification?.pan === 'Verified' &&
-      candidate.autoVerification?.address === 'Verified' &&
-      candidate.degreeStatus === 'Verified' &&
-      candidate.employmentStatus === 'Verified'
-    );
-    
-    const reportType = allVerified ? 'Verification Completed' : 'Verification Completed with Issues';
-    
-    alert(`📄 ${reportType} Report generated for ${candidate.fullName}`);
-    setMessage(`✅ ${reportType} Report generated for ${candidate.fullName}`);
-    
-    // Mark report as generated so download button becomes enabled
-    setCandidate({ ...candidate, reportGenerated: true });
-    
+    alert(`📄 BGV Report generation requested for ${candidate.fullName}`);
+    setMessage(`✅ Report generation requested for ${candidate.fullName}`);
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // Download Report - Available only after Generate is clicked
   const handleDownloadReport = () => {
     if (!candidate?.reportGenerated) {
       alert('Please generate the report first.');
       return;
     }
-    const allVerified = (
-      candidate.autoVerification?.aadhaar === 'Verified' &&
-      candidate.autoVerification?.pan === 'Verified' &&
-      candidate.autoVerification?.address === 'Verified' &&
-      candidate.degreeStatus === 'Verified' &&
-      candidate.employmentStatus === 'Verified'
-    );
-    const reportType = allVerified ? 'Verification Completed' : 'Verification Completed with Issues';
-    alert(`📥 Downloading ${reportType} report for ${candidate.fullName}`);
+    alert(`📥 Downloading BGV report for ${candidate.fullName}`);
   };
 
   const getBadge = (status) => {
     if (status === 'Verified') return <span className="badge verified">✅ Verified</span>;
+    if (status === 'Approved') return <span className="badge approved">✅ Approved</span>;
     if (status === 'Rejected') return <span className="badge rejected">❌ Rejected</span>;
     return <span className="badge pending">⏳ Pending</span>;
   };
@@ -172,7 +131,7 @@ const CandidateDetails = () => {
   if (loading) return <div className="loading-container">Loading...</div>;
   if (!candidate) return <div className="error-container">Candidate not found</div>;
 
-  const allProcessed = isAllDocumentsProcessed();
+  const autoComplete = isAutoVerificationComplete();
 
   return (
     <div className="candidate-details-container">
@@ -186,9 +145,7 @@ const CandidateDetails = () => {
       <div className="details-card">
         {/* Profile Section */}
         <div className="profile-section">
-          <div className="profile-avatar">
-            <i className="fas fa-user-circle"></i>
-          </div>
+          <div className="profile-avatar"><i className="fas fa-user-circle"></i></div>
           <div className="profile-info">
             <h2>{candidate.fullName}</h2>
             <p><i className="fas fa-envelope"></i> {candidate.email}</p>
@@ -215,25 +172,15 @@ const CandidateDetails = () => {
         <div className="section">
           <h3>📎 View Uploaded Documents</h3>
           <div className="doc-buttons-grid">
-            <button className="doc-view-btn" onClick={() => handleViewDocument('Aadhaar', candidate.documents?.aadhaar)}>
-              <i className="fas fa-id-card"></i> View Aadhaar
-            </button>
-            <button className="doc-view-btn" onClick={() => handleViewDocument('PAN', candidate.documents?.pan)}>
-              <i className="fas fa-credit-card"></i> View PAN
-            </button>
-            <button className="doc-view-btn" onClick={() => handleViewDocument('Degree', candidate.documents?.degree)}>
-              <i className="fas fa-graduation-cap"></i> View Degree
-            </button>
-            <button className="doc-view-btn" onClick={() => handleViewDocument('Employment', candidate.documents?.employment)}>
-              <i className="fas fa-briefcase"></i> View Employment
-            </button>
-            <button className="doc-view-btn" onClick={() => handleViewDocument('Address', candidate.documents?.address)}>
-              <i className="fas fa-home"></i> View Address
-            </button>
+            <button className="doc-view-btn" onClick={() => handleViewDocument('Aadhaar', candidate.documents?.aadhaar)}>View Aadhaar</button>
+            <button className="doc-view-btn" onClick={() => handleViewDocument('PAN', candidate.documents?.pan)}>View PAN</button>
+            <button className="doc-view-btn" onClick={() => handleViewDocument('Degree', candidate.documents?.degree)}>View Degree</button>
+            <button className="doc-view-btn" onClick={() => handleViewDocument('Employment', candidate.documents?.employment)}>View Employment</button>
+            <button className="doc-view-btn" onClick={() => handleViewDocument('Address', candidate.documents?.address)}>View Address</button>
           </div>
         </div>
 
-        {/* Auto Verification Results - Aadhaar, PAN, Address (Read Only) */}
+        {/* Auto Verification Results - Aadhaar, PAN, Address only */}
         <div className="section">
           <h3>🤖 Auto Verification Results</h3>
           <div className="auto-verif-grid">
@@ -241,22 +188,25 @@ const CandidateDetails = () => {
             <div className="auto-verif-item">PAN: {getBadge(candidate.autoVerification?.pan)}</div>
             <div className="auto-verif-item">Address: {getBadge(candidate.autoVerification?.address)}</div>
           </div>
+          {!autoComplete && (
+            <div className="verification-progress">
+              <div className="progress-bar-bg">
+                <div className="progress-bar-fill" style={{ width: `${Object.values(candidate.autoVerification || {}).filter(v => v === 'Verified').length * 33}%` }}></div>
+              </div>
+              <div className="progress-text">Auto-verification in progress...</div>
+            </div>
+          )}
         </div>
 
         {/* HR Manual Verification - Degree & Employment */}
         <div className="section">
           <h3>👔 HR Manual Verification</h3>
           <div className="hr-manual-grid">
-            {/* Degree Certificate */}
             <div className="manual-card">
               <div className="manual-title">🎓 Degree Certificate</div>
               <div className="manual-status">Current: {getBadge(candidate.degreeStatus)}</div>
               <div className="manual-controls">
-                <select 
-                  value={degreeStatus} 
-                  onChange={(e) => setDegreeStatus(e.target.value)} 
-                  className="status-select"
-                >
+                <select value={degreeStatus} onChange={(e) => setDegreeStatus(e.target.value)} className="status-select">
                   <option value="Pending">Pending</option>
                   <option value="Verified">Verified</option>
                   <option value="Rejected">Rejected</option>
@@ -265,16 +215,11 @@ const CandidateDetails = () => {
               </div>
             </div>
 
-            {/* Employment Proof */}
             <div className="manual-card">
               <div className="manual-title">💼 Employment Proof</div>
               <div className="manual-status">Current: {getBadge(candidate.employmentStatus)}</div>
               <div className="manual-controls">
-                <select 
-                  value={employmentStatus} 
-                  onChange={(e) => setEmploymentStatus(e.target.value)} 
-                  className="status-select"
-                >
+                <select value={employmentStatus} onChange={(e) => setEmploymentStatus(e.target.value)} className="status-select">
                   <option value="Pending">Pending</option>
                   <option value="Verified">Verified</option>
                   <option value="Rejected">Rejected</option>
@@ -285,28 +230,26 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Overall Status */}
-        <div className="overall-status">
-          <span>Overall Status:</span>
-          <span className={`status-text ${allProcessed ? (getOverallStatus().includes('Verified') ? 'success' : 'warning') : 'pending'}`}>
-            {getOverallStatus()}
-          </span>
+        {/* HR Status Display */}
+        <div className="hr-status-section">
+          <div className="hr-status-label">HR Final Status:</div>
+          <div className="hr-status-value">
+            {candidate.hrReviewStatus === 'Approved' ? (
+              <span className="badge approved">✅ Approved</span>
+            ) : candidate.hrReviewStatus === 'Rejected' ? (
+              <span className="badge rejected">❌ Rejected</span>
+            ) : (
+              <span className="badge pending">⏳ Pending</span>
+            )}
+          </div>
         </div>
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button 
-            className="btn-generate" 
-            onClick={handleGenerateReport} 
-            disabled={!allProcessed}
-          >
+          <button className="btn-generate" onClick={handleGenerateReport} disabled={candidate?.hrReviewStatus !== 'Approved'}>
             <i className="fas fa-file-pdf"></i> Generate BGV Report
           </button>
-          <button 
-            className="btn-download" 
-            onClick={handleDownloadReport} 
-            disabled={!candidate?.reportGenerated}
-          >
+          <button className="btn-download" onClick={handleDownloadReport} disabled={!candidate?.reportGenerated}>
             <i className="fas fa-download"></i> Download Report
           </button>
         </div>

@@ -10,14 +10,11 @@ const CandidatesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [departmentFilter, setDepartmentFilter] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const filter = params.get('filter');
-    const dept = params.get('department');
     if (filter) setActiveFilter(filter);
-    if (dept) setDepartmentFilter(dept);
   }, [location.search]);
 
   useEffect(() => {
@@ -26,7 +23,7 @@ const CandidatesList = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [candidates, searchTerm, activeFilter, departmentFilter]);
+  }, [candidates, searchTerm, activeFilter]);
 
   const fetchCandidates = async () => {
     try {
@@ -47,16 +44,6 @@ const CandidatesList = () => {
       filtered = filtered.filter(c => c.hrReviewStatus?.toLowerCase() === activeFilter.toLowerCase());
     }
     
-    if (departmentFilter) {
-      if (departmentFilter === 'Engineering') {
-        filtered = filtered.filter(c => c.positionApplied?.includes('Developer') || c.positionApplied?.includes('Engineer'));
-      } else if (departmentFilter === 'Product') {
-        filtered = filtered.filter(c => c.positionApplied?.includes('Product'));
-      } else if (departmentFilter === 'Design') {
-        filtered = filtered.filter(c => c.positionApplied?.includes('UI') || c.positionApplied?.includes('UX'));
-      }
-    }
-    
     if (searchTerm) {
       filtered = filtered.filter(c =>
         c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,16 +54,18 @@ const CandidatesList = () => {
     setFilteredCandidates(filtered);
   };
 
-  const getAutoVerificationStatus = (candidate) => {
-    const auto = candidate.autoVerification;
-    if (!auto) return <span className="status-progress">⏳ In Progress</span>;
-    const allVerified = auto.aadhaar === 'Verified' && auto.pan === 'Verified' && 
-                        auto.degree === 'Verified' && auto.employment === 'Verified' && 
-                        auto.address === 'Verified';
-    if (allVerified) return <span className="status-completed">✅ Completed</span>;
+  // Verification Status - ONLY based on Aadhaar, PAN, Address
+  const getVerificationStatus = (candidate) => {
+    const allAutoVerified = 
+      candidate.autoVerification?.aadhaar === 'Verified' &&
+      candidate.autoVerification?.pan === 'Verified' &&
+      candidate.autoVerification?.address === 'Verified';
+    
+    if (allAutoVerified) return <span className="status-completed">✅ Completed</span>;
     return <span className="status-progress">⏳ In Progress</span>;
   };
 
+  // HR Status - Based on Degree, Employment and HR decision
   const getHrStatusBadge = (status) => {
     if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
     if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
@@ -98,16 +87,16 @@ const CandidatesList = () => {
 
       <div className="filter-buttons">
         <button className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => { setActiveFilter('all'); navigate('/candidates-list?filter=all'); }}>
-          <i className="fas fa-list"></i> All ({candidates.length})
+          All ({candidates.length})
         </button>
         <button className={`filter-btn ${activeFilter === 'pending' ? 'active' : ''}`} onClick={() => { setActiveFilter('pending'); navigate('/candidates-list?filter=pending'); }}>
-          <i className="fas fa-clock"></i> Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
+          Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
         </button>
         <button className={`filter-btn ${activeFilter === 'approved' ? 'active' : ''}`} onClick={() => { setActiveFilter('approved'); navigate('/candidates-list?filter=approved'); }}>
-          <i className="fas fa-check-circle"></i> Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
+          Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
         </button>
         <button className={`filter-btn ${activeFilter === 'rejected' ? 'active' : ''}`} onClick={() => { setActiveFilter('rejected'); navigate('/candidates-list?filter=rejected'); }}>
-          <i className="fas fa-times-circle"></i> Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
+          Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
         </button>
       </div>
 
@@ -131,7 +120,7 @@ const CandidatesList = () => {
                 <td>{c.email}</td>
                 <td>{c.phone}</td>
                 <td>{c.positionApplied}</td>
-                <td>{getAutoVerificationStatus(c)}</td>
+                <td>{getVerificationStatus(c)}</td>
                 <td>{getHrStatusBadge(c.hrReviewStatus)}</td>
                 <td className="action-cell">
                   <button className="view-details-btn" onClick={() => navigate(`/candidate-details/${c._id}`)}>

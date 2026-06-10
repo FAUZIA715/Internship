@@ -469,3 +469,25 @@
     grid-template-columns: 1fr;
   }
 }
+/* HR Status Section */
+.hr-status-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hr-status-label {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.hr-status-value .badge {
+  padding: 6px 16px;
+  font-size: 14px;
+}
