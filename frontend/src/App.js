@@ -1,10 +1,10 @@
-// App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import HRDashboard from './components/HRDashboard';
 import UploadDocuments from './components/UploadDocuments';
 import ViewDocuments from './components/ViewDocuments';
-import UpdateDocument from './components/UpdateDocuments';
+import UpdateDocument from './components/UpdateDocument';
 import Login from './components/Login';
 import './App.css';
 
@@ -24,7 +24,7 @@ function App() {
   const handleLogin = (userData) => {
     setIsAuthenticated(true);
     setUser(userData);
-    localStorage.setItem('token', 'dummy-token');
+    localStorage.setItem('token', userData.token);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
@@ -34,6 +34,13 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
+
+  const getDashboardComponent = () => {
+    if (user?.role === 'hr') return HRDashboard;
+    return Dashboard;
+  };
+
+  const DashboardComponent = getDashboardComponent();
 
   return (
     <Router>
@@ -45,11 +52,11 @@ function App() {
           />
           <Route 
             path="/dashboard" 
-            element={isAuthenticated ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+            element={isAuthenticated ? <DashboardComponent user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
             path="/upload" 
-            element={isAuthenticated ? <UploadDocuments user={user} /> : <Navigate to="/login" />} 
+            element={isAuthenticated && user?.role === 'candidate' ? <UploadDocuments user={user} /> : <Navigate to="/dashboard" />} 
           />
           <Route 
             path="/documents" 
@@ -57,7 +64,7 @@ function App() {
           />
           <Route 
             path="/update/:documentId" 
-            element={isAuthenticated ? <UpdateDocument user={user} /> : <Navigate to="/login" />} 
+            element={isAuthenticated && user?.role === 'candidate' ? <UpdateDocument user={user} /> : <Navigate to="/documents" />} 
           />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>

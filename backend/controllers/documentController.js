@@ -1,56 +1,32 @@
 const Document = require('../models/Document');
 const User = require('../models/User');
 const fs = require('fs');
-const path = require('path');
 
 // @desc    Upload document
-// @route   POST /api/documents/upload
-// @access  Private (Candidate)
 exports.uploadDocument = async (req, res) => {
   try {
     const { documentType, documentName } = req.body;
     const candidateId = req.user.id;
 
-    // Validate required fields
     if (!documentType || !documentName) {
-      return res.status(400).json({
-        success: false,
-        message: 'documentType and documentName are required'
-      });
+      return res.status(400).json({ success: false, message: 'documentType and documentName are required' });
     }
 
-    // Validate document type from SRS
     const validTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
     if (!validTypes.includes(documentType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid document type. Allowed: aadhaar, pan, degree, employment, address'
-      });
+      return res.status(400).json({ success: false, message: 'Invalid document type' });
     }
 
-    // Check if file was uploaded
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload a file'
-      });
+      return res.status(400).json({ success: false, message: 'Please upload a file' });
     }
 
-    // Check if document of same type already exists
-    const existingDoc = await Document.findOne({
-      candidateId,
-      documentType
-    });
-
+    const existingDoc = await Document.findOne({ candidateId, documentType });
     if (existingDoc) {
-      // Delete old file
-      if (fs.existsSync(existingDoc.filePath)) {
-        fs.unlinkSync(existingDoc.filePath);
-      }
+      if (fs.existsSync(existingDoc.filePath)) fs.unlinkSync(existingDoc.filePath);
       await Document.deleteOne({ _id: existingDoc._id });
     }
 
-    // Create new document record
     const document = await Document.create({
       candidateId,
       documentType,
@@ -59,317 +35,194 @@ exports.uploadDocument = async (req, res) => {
       fileName: req.file.filename,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
-      uploadDate: new Date(),
       status: 'pending'
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Document uploaded successfully',
-      document: {
-        documentId: document.documentId,
-        documentType: document.documentType,
-        documentName: document.documentName,
-        fileName: document.fileName,
-        fileSize: document.fileSize,
-        status: document.status,
-        uploadDate: document.uploadDate
-      }
-    });
-
+    res.status(201).json({ success: true, message: 'Document uploaded successfully', document });
   } catch (err) {
-    // Clean up uploaded file if error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get all documents for a candidate
-// @route   GET /api/documents
-// @access  Private
+// @desc    Get all documents
 exports.getDocuments = async (req, res) => {
   try {
-    let query = { candidateId: req.user.id };
+    let query = {};
     
-    // Admin can filter by candidateId
-    if (req.user.role === 'admin' && req.query.candidateId) {
-      query = { candidateId: req.query.candidateId };
+    if (req.user.role === 'candidate') {
+      query.candidateId = req.user.id;
+    } else if (req.query.candidateId) {
+      query.candidateId = req.query.candidateId;
     }
 
-    const documents = await Document.find(query)
-      .populate('verifiedBy', 'name email')
-      .sort({ uploadDate: -1 });
+    const documents = await Document.find(query).populate('verifiedBy', 'name').sort({ uploadDate: -1 });
+    
+    // If HR, also return list of candidates
+    let candidates = null;
+    if (req.user.role === 'hr' && !req.query.candidateId) {
+      candidates = await User.find({ role: 'candidate' }).select('_id name email phone address');
+    }
 
-    // Get verification status summary
-    const verificationSummary = {
-      total: documents.length,
-      pending: documents.filter(d => d.status === 'pending').length,
-      verified: documents.filter(d => d.status === 'verified').length,
-      rejected: documents.filter(d => d.status === 'rejected').length
-    };
-
-    // Group by document type
-    const byType = {
-      aadhaar: documents.find(d => d.documentType === 'aadhaar') || null,
-      pan: documents.find(d => d.documentType === 'pan') || null,
-      degree: documents.find(d => d.documentType === 'degree') || null,
-      employment: documents.find(d => d.documentType === 'employment') || null,
-      address: documents.find(d => d.documentType === 'address') || null
-    };
-
-    res.status(200).json({
-      success: true,
-      count: documents.length,
-      documents,
-      verificationSummary,
-      byType
-    });
-
+    res.status(200).json({ success: true, documents, candidates });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // @desc    Get single document by ID
-// @route   GET /api/documents/:id
-// @access  Private
 exports.getDocumentById = async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id })
-      .populate('candidateId', 'name email');
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
+    const document = await Document.findOne({ documentId: req.params.id }).populate('candidateId', 'name email');
+    if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
+    
+    if (req.user.role === 'candidate' && document.candidateId._id.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
-    // Check authorization
-    if (req.user.role !== 'admin' && document.candidateId._id.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      document
-    });
-
+    res.status(200).json({ success: true, document });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Download document file
-// @route   GET /api/documents/download/:id
-// @access  Private
+// @desc    Download document
 exports.downloadDocument = async (req, res) => {
   try {
     const document = await Document.findOne({ documentId: req.params.id });
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
+    if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
+    
+    if (req.user.role === 'candidate' && document.candidateId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
-    // Check authorization
-    if (req.user.role !== 'admin' && document.candidateId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
-    }
-
-    // Check if file exists
+    
     if (!fs.existsSync(document.filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found on server'
-      });
+      return res.status(404).json({ success: false, message: 'File not found' });
     }
-
+    
     res.download(document.filePath, document.fileName);
-
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Update document (replace with new file)
-// @route   PUT /api/documents/:id
-// @access  Private (Candidate)
+// @desc    Update document
 exports.updateDocument = async (req, res) => {
   try {
     const document = await Document.findOne({ documentId: req.params.id });
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-
-    // Check authorization
+    if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
+    
     if (document.candidateId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload a new file'
-      });
-    }
-
-    // Delete old file
-    if (fs.existsSync(document.filePath)) {
-      fs.unlinkSync(document.filePath);
-    }
-
-    // Update document
+    
+    if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a new file' });
+    
+    if (fs.existsSync(document.filePath)) fs.unlinkSync(document.filePath);
+    
     document.filePath = req.file.path;
     document.fileName = req.file.filename;
     document.fileSize = req.file.size;
-    document.mimeType = req.file.mimetype;
     document.status = 'pending';
     document.rejectionReason = null;
     document.verifiedBy = null;
     document.verifiedAt = null;
-    
     await document.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Document updated successfully',
-      document: {
-        documentId: document.documentId,
-        documentType: document.documentType,
-        status: document.status,
-        updatedAt: document.updatedAt
-      }
-    });
-
+    
+    res.status(200).json({ success: true, message: 'Document updated successfully', document });
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // @desc    Delete document
-// @route   DELETE /api/documents/:id
-// @access  Private (Candidate)
 exports.deleteDocument = async (req, res) => {
   try {
     const document = await Document.findOne({ documentId: req.params.id });
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
+    if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
+    
+    if (req.user.role !== 'hr' && document.candidateId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
-    // Check authorization
-    if (document.candidateId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
-    }
-
-    // Delete file from disk
-    if (fs.existsSync(document.filePath)) {
-      fs.unlinkSync(document.filePath);
-    }
-
+    
+    if (fs.existsSync(document.filePath)) fs.unlinkSync(document.filePath);
     await Document.deleteOne({ _id: document._id });
-
-    res.status(200).json({
-      success: true,
-      message: 'Document deleted successfully'
-    });
-
+    
+    res.status(200).json({ success: true, message: 'Document deleted successfully' });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Verify document (Admin only)
-// @route   PUT /api/documents/:id/verify
-// @access  Private (Admin)
+// @desc    Verify document (HR only - for degree, employment, address)
 exports.verifyDocument = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
     const document = await Document.findOne({ documentId: req.params.id });
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
+    
+    if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
+    
+    // HR can only verify degree, employment, address
+    const hrVerifiableTypes = ['degree', 'employment', 'address'];
+    if (req.user.role === 'hr' && !hrVerifiableTypes.includes(document.documentType)) {
+      return res.status(403).json({ success: false, message: 'HR can only verify degree, employment, and address proofs' });
     }
-
+    
     if (!['verified', 'rejected'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Status must be "verified" or "rejected"'
-      });
+      return res.status(400).json({ success: false, message: 'Status must be "verified" or "rejected"' });
     }
-
+    
     document.status = status;
-    if (status === 'rejected' && rejectionReason) {
-      document.rejectionReason = rejectionReason;
-    }
+    if (status === 'rejected' && rejectionReason) document.rejectionReason = rejectionReason;
     document.verifiedBy = req.user.id;
     document.verifiedAt = new Date();
-    
     await document.save();
-
-    res.status(200).json({
-      success: true,
-      message: `Document ${status} successfully`,
-      document: {
-        documentId: document.documentId,
-        status: document.status,
-        rejectionReason: document.rejectionReason,
-        verifiedAt: document.verifiedAt
-      }
-    });
-
+    
+    res.status(200).json({ success: true, message: `Document ${status} successfully`, document });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Get all candidates with verification status (HR view)
+exports.getAllCandidatesStatus = async (req, res) => {
+  try {
+    const candidates = await User.find({ role: 'candidate' }).select('_id name email phone address createdAt');
+    const candidateData = await Promise.all(candidates.map(async (candidate) => {
+      const documents = await Document.find({ candidateId: candidate._id });
+      const statusMap = {
+        aadhaar: documents.find(d => d.documentType === 'aadhaar')?.status || 'not_uploaded',
+        pan: documents.find(d => d.documentType === 'pan')?.status || 'not_uploaded',
+        degree: documents.find(d => d.documentType === 'degree')?.status || 'not_uploaded',
+        employment: documents.find(d => d.documentType === 'employment')?.status || 'not_uploaded',
+        address: documents.find(d => d.documentType === 'address')?.status || 'not_uploaded'
+      };
+      const allVerified = ['aadhaar', 'pan', 'degree', 'employment', 'address'].every(
+        type => statusMap[type] === 'verified'
+      );
+      return {
+        ...candidate.toObject(),
+        documents: statusMap,
+        overallStatus: allVerified ? 'verified' : 'pending',
+        documentsList: documents
+      };
+    }));
+    res.status(200).json({ success: true, candidates: candidateData });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Get candidate details with documents (HR view)
+exports.getCandidateDetails = async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    const candidate = await User.findById(candidateId).select('-password');
+    if (!candidate) return res.status(404).json({ success: false, message: 'Candidate not found' });
+    
+    const documents = await Document.find({ candidateId }).sort({ uploadDate: -1 });
+    res.status(200).json({ success: true, candidate, documents });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };

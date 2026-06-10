@@ -9,7 +9,9 @@ const {
   downloadDocument,
   updateDocument,
   deleteDocument,
-  verifyDocument
+  verifyDocument,
+  getAllCandidatesStatus,
+  getCandidateDetails
 } = require('../controllers/documentController');
 
 // All routes require authentication
@@ -18,12 +20,14 @@ router.use(protect);
 // Document CRUD operations
 router.post('/upload', upload.single('document'), uploadDocument);
 router.get('/', getDocuments);
-router.get('/:id', getDocumentById);
 router.get('/download/:id', downloadDocument);
+router.get('/:id', getDocumentById);
 router.put('/:id', upload.single('document'), updateDocument);
 router.delete('/:id', deleteDocument);
 
-// Admin verification
-router.put('/:id/verify', authorize('admin'), verifyDocument);
+// HR specific routes
+router.get('/hr/candidates', authorize('hr'), getAllCandidatesStatus);
+router.get('/hr/candidate/:candidateId', authorize('hr'), getCandidateDetails);
+router.put('/:id/verify', authorize('hr'), verifyDocument);
 
 module.exports = router;

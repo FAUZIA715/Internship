@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'candidate'],
+    enum: ['admin', 'hr', 'candidate'],  // Added 'hr'
     default: 'candidate'
   },
   phone: {
@@ -29,6 +29,9 @@ const UserSchema = new mongoose.Schema({
   },
   dateOfBirth: {
     type: Date
+  },
+  position: {
+    type: String  // Job position for candidate
   },
   createdAt: {
     type: Date,

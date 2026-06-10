@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const DocumentSchema = new mongoose.Schema({
   documentId: {
-    type: String,
-    unique: true,
-    default: () => 'DOC_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-  },
+  type: String,
+  unique: true,  // ← This creates an index
+  default: () => 'DOC_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+},
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -62,8 +62,6 @@ const DocumentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
-DocumentSchema.index({ candidateId: 1, documentType: 1 });
-DocumentSchema.index({ documentId: 1 });
+
 
 module.exports = mongoose.model('Document', DocumentSchema);
