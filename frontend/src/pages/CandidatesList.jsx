@@ -54,7 +54,6 @@ const CandidatesList = () => {
     setFilteredCandidates(filtered);
   };
 
-  // Verification Status - ONLY based on Aadhaar, PAN, Address
   const getVerificationStatus = (candidate) => {
     const allAutoVerified = 
       candidate.autoVerification?.aadhaar === 'Verified' &&
@@ -65,7 +64,6 @@ const CandidatesList = () => {
     return <span className="status-progress">⏳ In Progress</span>;
   };
 
-  // HR Status - Based on Degree, Employment and HR decision
   const getHrStatusBadge = (status) => {
     if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
     if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;

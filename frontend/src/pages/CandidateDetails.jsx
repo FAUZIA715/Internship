@@ -38,7 +38,6 @@ const CandidateDetails = () => {
     window.open(`http://localhost:5000${docUrl}`, '_blank');
   };
 
-  // Update Degree Status
   const handleUpdateDegree = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-degree`, {
@@ -48,13 +47,8 @@ const CandidateDetails = () => {
       });
       
       if (response.ok) {
-        const data = await response.json();
         setMessage(`✅ Degree status updated to ${degreeStatus}`);
-        setCandidate(data.candidate);
-        setTimeout(() => setMessage(''), 3000);
         fetchCandidate();
-      } else {
-        setMessage('❌ Update failed');
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -63,7 +57,6 @@ const CandidateDetails = () => {
     }
   };
 
-  // Update Employment Status
   const handleUpdateEmployment = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-employment`, {
@@ -73,13 +66,8 @@ const CandidateDetails = () => {
       });
       
       if (response.ok) {
-        const data = await response.json();
         setMessage(`✅ Employment status updated to ${employmentStatus}`);
-        setCandidate(data.candidate);
-        setTimeout(() => setMessage(''), 3000);
         fetchCandidate();
-      } else {
-        setMessage('❌ Update failed');
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -88,25 +76,13 @@ const CandidateDetails = () => {
     }
   };
 
-  // Check if auto verification (Aadhaar, PAN, Address) is complete
-  const isAutoVerificationComplete = () => {
-    if (!candidate) return false;
-    return (
-      candidate.autoVerification?.aadhaar === 'Verified' &&
-      candidate.autoVerification?.pan === 'Verified' &&
-      candidate.autoVerification?.address === 'Verified'
-    );
-  };
-
   const handleGenerateReport = async () => {
     if (candidate?.hrReviewStatus !== 'Approved') {
-      setMessage('❌ Cannot generate report. Candidate not approved by HR yet.');
+      setMessage('❌ Cannot generate report. Candidate not approved yet.');
       setTimeout(() => setMessage(''), 3000);
       return;
     }
     alert(`📄 BGV Report generation requested for ${candidate.fullName}`);
-    setMessage(`✅ Report generation requested for ${candidate.fullName}`);
-    setTimeout(() => setMessage(''), 3000);
   };
 
   const handleDownloadReport = () => {
@@ -131,8 +107,6 @@ const CandidateDetails = () => {
   if (loading) return <div className="loading-container">Loading...</div>;
   if (!candidate) return <div className="error-container">Candidate not found</div>;
 
-  const autoComplete = isAutoVerificationComplete();
-
   return (
     <div className="candidate-details-container">
       <div className="details-header">
@@ -143,9 +117,10 @@ const CandidateDetails = () => {
       {message && <div className="message success">{message}</div>}
 
       <div className="details-card">
-        {/* Profile Section */}
         <div className="profile-section">
-          <div className="profile-avatar"><i className="fas fa-user-circle"></i></div>
+          <div className="profile-avatar">
+            <i className="fas fa-user-circle"></i>
+          </div>
           <div className="profile-info">
             <h2>{candidate.fullName}</h2>
             <p><i className="fas fa-envelope"></i> {candidate.email}</p>
@@ -156,7 +131,6 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Document Upload Status */}
         <div className="section">
           <h3>📄 Document Upload Status</h3>
           <div className="docs-grid">
@@ -168,7 +142,6 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Document View Buttons */}
         <div className="section">
           <h3>📎 View Uploaded Documents</h3>
           <div className="doc-buttons-grid">
@@ -180,7 +153,6 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* Auto Verification Results - Aadhaar, PAN, Address only */}
         <div className="section">
           <h3>🤖 Auto Verification Results</h3>
           <div className="auto-verif-grid">
@@ -188,17 +160,8 @@ const CandidateDetails = () => {
             <div className="auto-verif-item">PAN: {getBadge(candidate.autoVerification?.pan)}</div>
             <div className="auto-verif-item">Address: {getBadge(candidate.autoVerification?.address)}</div>
           </div>
-          {!autoComplete && (
-            <div className="verification-progress">
-              <div className="progress-bar-bg">
-                <div className="progress-bar-fill" style={{ width: `${Object.values(candidate.autoVerification || {}).filter(v => v === 'Verified').length * 33}%` }}></div>
-              </div>
-              <div className="progress-text">Auto-verification in progress...</div>
-            </div>
-          )}
         </div>
 
-        {/* HR Manual Verification - Degree & Employment */}
         <div className="section">
           <h3>👔 HR Manual Verification</h3>
           <div className="hr-manual-grid">
@@ -230,27 +193,17 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* HR Status Display */}
         <div className="hr-status-section">
           <div className="hr-status-label">HR Final Status:</div>
-          <div className="hr-status-value">
-            {candidate.hrReviewStatus === 'Approved' ? (
-              <span className="badge approved">✅ Approved</span>
-            ) : candidate.hrReviewStatus === 'Rejected' ? (
-              <span className="badge rejected">❌ Rejected</span>
-            ) : (
-              <span className="badge pending">⏳ Pending</span>
-            )}
-          </div>
+          <div className="hr-status-value">{getBadge(candidate.hrReviewStatus)}</div>
         </div>
 
-        {/* Action Buttons */}
         <div className="action-buttons">
           <button className="btn-generate" onClick={handleGenerateReport} disabled={candidate?.hrReviewStatus !== 'Approved'}>
-            <i className="fas fa-file-pdf"></i> Generate BGV Report
+            Generate BGV Report
           </button>
           <button className="btn-download" onClick={handleDownloadReport} disabled={!candidate?.reportGenerated}>
-            <i className="fas fa-download"></i> Download Report
+            Download Report
           </button>
         </div>
       </div>

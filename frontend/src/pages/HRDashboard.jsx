@@ -26,7 +26,6 @@ const HRDashboard = ({ user, onLogout }) => {
       const approved = data.filter(c => c.hrReviewStatus === 'Approved').length;
       const rejected = data.filter(c => c.hrReviewStatus === 'Rejected').length;
       
-      // Department stats
       const departments = [
         { name: 'Engineering', count: data.filter(c => c.department === 'Engineering').length },
         { name: 'Product', count: data.filter(c => c.department === 'Product').length },
@@ -47,46 +46,75 @@ const HRDashboard = ({ user, onLogout }) => {
 
   return (
     <div className="hr-dashboard">
+      {/* Header */}
       <div className="dashboard-header">
         <div className="logo-area">
-          <div className="logo-icon-small"><i className="fas fa-shield-alt"></i></div>
-          <span className="logo-text">HR Workspace</span>
+          <div className="logo-icon-small">
+            <i className="fas fa-shield-alt"></i>
+          </div>
+          <div className="logo-wrapper">
+            <span className="logo-brand">VeriFlow</span>
+            <span className="logo-divider">|</span>
+            <span className="logo-brand">HR Workspace</span>
+          </div>
         </div>
         <div className="user-area">
           <div className="user-info">
             <i className="fas fa-user-circle"></i>
-            <div><p className="user-name">HR Administrator</p><p className="user-role">Verification Manager</p></div>
+            <div>
+              <p className="user-name">HR Administrator</p>
+              <p className="user-role">Verification Manager</p>
+            </div>
           </div>
-          <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
+          <button onClick={onLogout} className="logout-btn">
+            <i className="fas fa-sign-out-alt"></i> Logout
+          </button>
         </div>
       </div>
 
+      {/* Welcome Section */}
       <div className="welcome-section">
         <h1>Welcome back, HR Administrator!</h1>
         <p>Manage candidate verifications and track document status</p>
       </div>
 
-      {/* Stats Grid - 4 columns */}
+      {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card total" onClick={() => navigate('/candidates-list?filter=all')}>
-          <div className="stat-icon"><i className="fas fa-users"></i></div>
-          <div className="stat-number">{stats.total}</div>
-          <div className="stat-label">Total Candidates</div>
+          <div className="stat-icon">
+            <i className="fas fa-users"></i>
+          </div>
+          <div className="stat-info">
+            <div className="stat-number">{stats.total}</div>
+            <div className="stat-label">Total Candidates</div>
+          </div>
         </div>
         <div className="stat-card pending" onClick={() => navigate('/candidates-list?filter=pending')}>
-          <div className="stat-icon"><i className="fas fa-clock"></i></div>
-          <div className="stat-number">{stats.pending}</div>
-          <div className="stat-label">Pending Review</div>
+          <div className="stat-icon">
+            <i className="fas fa-clock"></i>
+          </div>
+          <div className="stat-info">
+            <div className="stat-number">{stats.pending}</div>
+            <div className="stat-label">Pending Review</div>
+          </div>
         </div>
         <div className="stat-card approved" onClick={() => navigate('/candidates-list?filter=approved')}>
-          <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
-          <div className="stat-number">{stats.approved}</div>
-          <div className="stat-label">Approved</div>
+          <div className="stat-icon">
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div className="stat-info">
+            <div className="stat-number">{stats.approved}</div>
+            <div className="stat-label">Approved</div>
+          </div>
         </div>
         <div className="stat-card rejected" onClick={() => navigate('/candidates-list?filter=rejected')}>
-          <div className="stat-icon"><i className="fas fa-times-circle"></i></div>
-          <div className="stat-number">{stats.rejected}</div>
-          <div className="stat-label">Rejected</div>
+          <div className="stat-icon">
+            <i className="fas fa-times-circle"></i>
+          </div>
+          <div className="stat-info">
+            <div className="stat-number">{stats.rejected}</div>
+            <div className="stat-label">Rejected</div>
+          </div>
         </div>
       </div>
 

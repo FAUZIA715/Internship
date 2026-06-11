@@ -1,13 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .hr-dashboard {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%);
   font-family: 'Poppins', sans-serif;
   padding: 20px;
 }
 
+/* Header */
 .dashboard-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -27,23 +34,39 @@
 }
 
 .logo-icon-small {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 22px;
+  font-size: 20px;
 }
 
-.logo-text {
-  font-size: 22px;
+.logo-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.logo-brand {
+  font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1f2937;
+}
+
+.logo-divider {
+  font-size: 18px;
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+.logo-workspace {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .user-area {
@@ -91,8 +114,9 @@
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
+/* Welcome Section */
 .welcome-section {
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%);
   border-radius: 24px;
   padding: 40px;
   color: white;
@@ -106,7 +130,7 @@
   margin-bottom: 8px;
 }
 
-/* Stats Grid - 4 columns */
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -274,16 +298,13 @@
   .dashboard-header {
     flex-direction: column;
     gap: 15px;
+    text-align: center;
+  }
+  .logo-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .departments-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .action-buttons-group {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .action-btn {
-    flex: 1;
-    justify-content: center;
   }
 }
