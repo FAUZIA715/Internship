@@ -157,7 +157,7 @@ const CandidateDetails = () => {
         </div>
 
         <div className="section">
-          <h3>🤖 Auto Verification Results</h3>
+          <h3>🤖 BGV Results</h3>
           <div className="auto-verif-grid">
             <div className="auto-verif-item">🆔 Aadhaar: {getBadge(candidate.autoVerification?.aadhaar)}</div>
             <div className="auto-verif-item">💳 PAN: {getBadge(candidate.autoVerification?.pan)}</div>
