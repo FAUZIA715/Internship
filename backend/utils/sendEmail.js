@@ -10,7 +10,7 @@ const sendEmail = async ({ to, subject, html }) => {
   });
 
   await transporter.sendMail({
-    from: `"BGV System" <${process.env.EMAIL}>`,
+    from: `"VeriFlow BGV System" <${process.env.EMAIL}>`,
     to,
     subject,
     html

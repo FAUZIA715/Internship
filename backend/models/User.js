@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Name is required'],
     trim: true
-   },
+  },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -16,34 +16,26 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: 6,
     select: false
   },
   role: {
     type: String,
-    enum: ['admin', 'candidate'],
-    default: 'candidate'
+    enum: ['candidate', 'hr'],
+    required: [true, 'Role is required']
   },
   isFirstLogin: {
     type: Boolean,
     default: true
   },
-  isSelected: {
-    type: Boolean,
-    default: false
+  resetPasswordToken: {
+    type: String
   },
-  tempPasswordExpiry: {
+  resetPasswordExpiry: {
     type: Date
   },
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  resetPasswordToken:{
-    type: String
-  },
-  resetPasswordExpiry: {
-    type: Date
   }
 });
 

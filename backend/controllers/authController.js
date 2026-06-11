@@ -1,9 +1,10 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 
+// ─── Token Generator ─────────────────────────────────────────────
 const generateToken = (userId, role) => {
   return jwt.sign(
     { id: userId, role },
@@ -12,16 +13,32 @@ const generateToken = (userId, role) => {
   );
 };
 
-const generateTempPassword = () => {
-  return Math.random().toString(36).slice(-8).toUpperCase();
+// ─── Password Validator ───────────────────────────────────────────
+const validatePassword = (password) => {
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number';
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return 'Password must contain at least one special character (!@#$%^&*)';
+  }
+  return null; // null means valid
 };
 
-// @desc    Login user
+// ─── Login ────────────────────────────────────────────────────────
 // @route   POST /api/auth/login
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, portalRole } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -35,6 +52,14 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
+      });
+    }
+
+    // RBAC — block wrong portal access
+    if (portalRole && user.role !== portalRole) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. This portal is for ${portalRole}s only.`
       });
     }
 
@@ -65,12 +90,28 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Change password
+// ─── Change Password ──────────────────────────────────────────────
 // @route   PUT /api/auth/change-password
-// @access  Private
+// @access  Protected
 exports.changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide old and new password'
+      });
+    }
+
+    // Validate new password strength
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({
+        success: false,
+        message: passwordError
+      });
+    }
 
     const user = await User.findById(req.user.id).select('+password');
 
@@ -78,7 +119,7 @@ exports.changePassword = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Old password is incorrect'
+        message: 'Current password is incorrect'
       });
     }
 
@@ -97,9 +138,9 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// @desc    Get profile
+// ─── Get Profile ──────────────────────────────────────────────────
 // @route   GET /api/auth/profile
-// @access  Private
+// @access  Protected
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -109,69 +150,7 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// @desc    Admin selects candidate - sends temp password email
-// @route   POST /api/auth/select-candidate
-// @access  Admin only
-exports.selectCandidate = async (req, res) => {
-  try {
-    const { name, email } = req.body;
-
-    const tempPassword = generateTempPassword();
-    const tempPasswordExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(tempPassword, salt);
-
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: 'Candidate already exists'
-      });
-    }
-
-    const candidate = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'candidate',
-      isSelected: true,
-      isFirstLogin: true,
-      tempPasswordExpiry
-    });
-
-    await sendEmail({
-      to: email,
-      subject: 'BGV System - Your Verification Portal Access',
-      html: `
-        <h2>Welcome ${name},</h2>
-        <p>You have been selected for background verification.</p>
-        <p>Your temporary login credentials:</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-        <p><strong>Valid until:</strong> ${tempPasswordExpiry.toDateString()}</p>
-        <p>Please login and change your password immediately.</p>
-        <br/>
-        <p>Regards,<br/>BGV System Team</p>
-      `
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `Candidate selected and email sent to ${email}`,
-      candidate: {
-        id: candidate._id,
-        name: candidate.name,
-        email: candidate.email
-      }
-    });
-
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// @desc    Forgot password - send reset email
+// ─── Forgot Password ──────────────────────────────────────────────
 // @route   POST /api/auth/forgot-password
 // @access  Public
 exports.forgotPassword = async (req, res) => {
@@ -197,10 +176,11 @@ exports.forgotPassword = async (req, res) => {
     if (user.isFirstLogin) {
       return res.status(400).json({
         success: false,
-        message: 'Your account has not been activated yet. Please login with your temporary password first.'
+        message: 'Account not yet activated. Please login with your temporary password first.'
       });
     }
 
+    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
 
     user.resetPasswordToken = crypto
@@ -209,29 +189,38 @@ exports.forgotPassword = async (req, res) => {
       .digest('hex');
 
     user.resetPasswordExpiry = Date.now() + 15 * 60 * 1000;
-
     await user.save();
 
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5173/${user.role}/reset-password/${resetToken}`;
 
     await sendEmail({
       to: email,
-      subject: 'BGV System - Password Reset Request',
+      subject: 'VeriFlow BGV — Password Reset Request',
       html: `
-        <h2>Password Reset Request</h2>
-        <p>You requested a password reset for your BGV System account.</p>
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetUrl}" style="background:#6366f1;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;margin:10px 0;">Reset Password</a>
-        <p>This link expires in <strong>15 minutes</strong>.</p>
-        <p>If you didn't request this, ignore this email.</p>
-        <br/>
-        <p>Regards,<br/>BGV System Team</p>
+        <div style="font-family: Inter, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8faff; border-radius: 12px;">
+          <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px;">
+            <h1 style="color: white; margin: 0; font-size: 20px;">VeriFlow BGV System</h1>
+          </div>
+          <h2 style="color: #1f2937; margin-bottom: 8px;">Password Reset Request</h2>
+          <p style="color: #6b7280; margin-bottom: 24px;">
+            You requested a password reset for your VeriFlow account. Click the button below to reset your password.
+          </p>
+          <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-bottom: 24px;">
+            Reset Password
+          </a>
+          <p style="color: #9ca3af; font-size: 13px; margin-bottom: 8px;">
+            This link expires in <strong>15 minutes</strong>.
+          </p>
+          <p style="color: #9ca3af; font-size: 13px;">
+            If you didn't request this, please ignore this email.
+          </p>
+        </div>
       `
     });
 
     res.status(200).json({
       success: true,
-      message: `Password reset email sent to ${email}`
+      message: `Password reset link sent to ${email}`
     });
 
   } catch (err) {
@@ -239,13 +228,13 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Reset password using token
-// @route   POST /api/auth/reset-password/:resetToken
+// ─── Reset Password ───────────────────────────────────────────────
+// @route   POST /api/auth/reset-password/:token
 // @access  Public
 exports.resetPassword = async (req, res) => {
   try {
     const { newPassword } = req.body;
-    const { resetToken } = req.params;
+    const { token } = req.params;
 
     if (!newPassword) {
       return res.status(400).json({
@@ -254,16 +243,18 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    // Validate new password strength
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters'
+        message: passwordError
       });
     }
 
     const hashedToken = crypto
       .createHash('sha256')
-      .update(resetToken)
+      .update(token)
       .digest('hex');
 
     const user = await User.findOne({
@@ -283,7 +274,6 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpiry = undefined;
     user.isFirstLogin = false;
-
     await user.save();
 
     res.status(200).json({
