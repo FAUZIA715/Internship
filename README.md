@@ -251,6 +251,5 @@ router.get('/hr-only', protect, authorize('hr'), yourController);
 ## Developer
 
 **Srinjoy Poddar**
-B.Tech CSE (AI/ML) — SMIT Rangpo
 Full Stack Intern — Aibi Tech
 June 2026
