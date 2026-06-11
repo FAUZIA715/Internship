@@ -127,6 +127,8 @@ const HRDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
+
+
       {/* Action Buttons */}
       <div className="action-buttons-group">
         <button className="action-btn primary" onClick={() => navigate('/candidates-list?filter=pending')}>

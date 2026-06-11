@@ -107,6 +107,9 @@ const CandidateDetails = () => {
   if (loading) return <div className="loading-container">⏳ Loading...</div>;
   if (!candidate) return <div className="error-container">⚠️ Candidate not found</div>;
 
+
+
+  
   return (
     <div className="candidate-details-container">
       <div className="details-header">
