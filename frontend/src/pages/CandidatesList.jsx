@@ -39,18 +39,15 @@ const CandidatesList = () => {
 
   const applyFilters = () => {
     let filtered = [...candidates];
-    
     if (activeFilter !== 'all') {
       filtered = filtered.filter(c => c.hrReviewStatus?.toLowerCase() === activeFilter.toLowerCase());
     }
-    
     if (searchTerm) {
       filtered = filtered.filter(c =>
         c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
     setFilteredCandidates(filtered);
   };
 
@@ -70,31 +67,31 @@ const CandidatesList = () => {
     return <span className="status-pending">⏳ Pending</span>;
   };
 
-  if (loading) return <div className="loading-container">Loading...</div>;
+  if (loading) return <div className="loading-container">⏳ Loading candidates...</div>;
 
   return (
     <div className="candidates-list-container">
       <div className="list-header">
         <button className="back-btn" onClick={() => navigate('/hr-dashboard')}>← Back to Dashboard</button>
-        <h1>All Candidates</h1>
+        <h1>👥 All Candidates</h1>
         <div className="search-box">
-          <i className="fas fa-search"></i>
+          🔍
           <input type="text" placeholder="Search by name or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
       <div className="filter-buttons">
         <button className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => { setActiveFilter('all'); navigate('/candidates-list?filter=all'); }}>
-          All ({candidates.length})
+          📋 All ({candidates.length})
         </button>
         <button className={`filter-btn ${activeFilter === 'pending' ? 'active' : ''}`} onClick={() => { setActiveFilter('pending'); navigate('/candidates-list?filter=pending'); }}>
-          Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
+          ⏳ Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
         </button>
         <button className={`filter-btn ${activeFilter === 'approved' ? 'active' : ''}`} onClick={() => { setActiveFilter('approved'); navigate('/candidates-list?filter=approved'); }}>
-          Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
+          ✅ Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
         </button>
         <button className={`filter-btn ${activeFilter === 'rejected' ? 'active' : ''}`} onClick={() => { setActiveFilter('rejected'); navigate('/candidates-list?filter=rejected'); }}>
-          Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
+          ❌ Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
         </button>
       </div>
 
@@ -102,27 +99,27 @@ const CandidatesList = () => {
         <table className="candidates-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Position</th>
-              <th>Verification Status</th>
-              <th>HR Status</th>
-              <th>Action</th>
+              <th>👤 Name</th>
+              <th>📧 Email</th>
+              <th>📞 Phone</th>
+              <th>💼 Position</th>
+              <th>📊 Verification Status</th>
+              <th>🏁 HR Status</th>
+              <th>⚙️ Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredCandidates.map(c => (
               <tr key={c._id}>
-                <td><strong>{c.fullName}</strong></td>
-                <td>{c.email}</td>
-                <td>{c.phone}</td>
-                <td>{c.positionApplied}</td>
+                <td><strong>👤 {c.fullName}</strong></td>
+                <td>📧 {c.email}</td>
+                <td>📞 {c.phone}</td>
+                <td>💼 {c.positionApplied}</td>
                 <td>{getVerificationStatus(c)}</td>
                 <td>{getHrStatusBadge(c.hrReviewStatus)}</td>
                 <td className="action-cell">
                   <button className="view-details-btn" onClick={() => navigate(`/candidate-details/${c._id}`)}>
-                    View Details →
+                    👁️ View Details →
                   </button>
                 </td>
               </tr>

@@ -31,7 +31,7 @@ const HRDashboard = ({ user, onLogout }) => {
         { name: 'Product', count: data.filter(c => c.department === 'Product').length },
         { name: 'Design', count: data.filter(c => c.department === 'Design').length },
         { name: 'Sales', count: data.filter(c => c.department === 'Sales').length },
-        { name: 'HR', count: data.filter(c => c.department === 'HR').length }
+        { name: 'Marketing', count: data.filter(c => c.department === 'Marketing').length },
       ];
       
       setStats({ total, pending, approved, rejected, departments });
@@ -42,7 +42,7 @@ const HRDashboard = ({ user, onLogout }) => {
     }
   };
 
-  if (loading) return <div className="loading-container">Loading Dashboard...</div>;
+  if (loading) return <div className="loading-container">⏳ Loading Dashboard...</div>;
 
   return (
     <div className="hr-dashboard">
@@ -50,7 +50,7 @@ const HRDashboard = ({ user, onLogout }) => {
       <div className="dashboard-header">
         <div className="logo-area">
           <div className="logo-icon-small">
-            <i className="fas fa-shield-alt"></i>
+            🛡️
           </div>
           <div className="logo-wrapper">
             <span className="logo-brand">VeriFlow</span>
@@ -60,57 +60,49 @@ const HRDashboard = ({ user, onLogout }) => {
         </div>
         <div className="user-area">
           <div className="user-info">
-            <i className="fas fa-user-circle"></i>
+            <div className="user-avatar">🧑</div>
             <div>
               <p className="user-name">HR Administrator</p>
               <p className="user-role">Verification Manager</p>
             </div>
           </div>
           <button onClick={onLogout} className="logout-btn">
-            <i className="fas fa-sign-out-alt"></i> Logout
+            🚪 Logout
           </button>
         </div>
       </div>
 
       {/* Welcome Section */}
       <div className="welcome-section">
-        <h1>Welcome back, HR Administrator!</h1>
-        <p>Manage candidate verifications and track document status</p>
+        <h1>👋 Welcome back, HR Administrator!</h1>
+        <p>📊 Manage candidate verifications and track document status</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards with Simple Icons */}
       <div className="stats-grid">
         <div className="stat-card total" onClick={() => navigate('/candidates-list?filter=all')}>
-          <div className="stat-icon">
-            <i className="fas fa-users"></i>
-          </div>
+          <div className="stat-icon">👥</div>
           <div className="stat-info">
             <div className="stat-number">{stats.total}</div>
             <div className="stat-label">Total Candidates</div>
           </div>
         </div>
         <div className="stat-card pending" onClick={() => navigate('/candidates-list?filter=pending')}>
-          <div className="stat-icon">
-            <i className="fas fa-clock"></i>
-          </div>
+          <div className="stat-icon">⏳</div>
           <div className="stat-info">
             <div className="stat-number">{stats.pending}</div>
             <div className="stat-label">Pending Review</div>
           </div>
         </div>
         <div className="stat-card approved" onClick={() => navigate('/candidates-list?filter=approved')}>
-          <div className="stat-icon">
-            <i className="fas fa-check-circle"></i>
-          </div>
+          <div className="stat-icon">✅</div>
           <div className="stat-info">
             <div className="stat-number">{stats.approved}</div>
             <div className="stat-label">Approved</div>
           </div>
         </div>
         <div className="stat-card rejected" onClick={() => navigate('/candidates-list?filter=rejected')}>
-          <div className="stat-icon">
-            <i className="fas fa-times-circle"></i>
-          </div>
+          <div className="stat-icon">❌</div>
           <div className="stat-info">
             <div className="stat-number">{stats.rejected}</div>
             <div className="stat-label">Rejected</div>
@@ -120,17 +112,17 @@ const HRDashboard = ({ user, onLogout }) => {
 
       {/* Departments Section */}
       <div className="departments-section">
-        <h3><i className="fas fa-building"></i> Departments</h3>
+        <h3>🏢 Departments</h3>
         <div className="departments-grid">
           {stats.departments.map((dept, idx) => (
             <div key={idx} className="dept-card" onClick={() => navigate(`/candidates-list?department=${dept.name}`)}>
-              <div className="dept-name">{dept.name}</div>
-              <div className="dept-count">{dept.count} candidates</div>
+              <div className="dept-name">📁 {dept.name}</div>
+              <div className="dept-count">👤 {dept.count} candidates</div>
             </div>
           ))}
           <div className="dept-card view-all" onClick={() => navigate('/candidates-list?filter=all')}>
-            <div className="dept-name">View All</div>
-            <div className="dept-count">{stats.total} candidates</div>
+            <div className="dept-name">👁️ View All</div>
+            <div className="dept-count">👥 {stats.total} candidates</div>
           </div>
         </div>
       </div>
@@ -138,13 +130,13 @@ const HRDashboard = ({ user, onLogout }) => {
       {/* Action Buttons */}
       <div className="action-buttons-group">
         <button className="action-btn primary" onClick={() => navigate('/candidates-list?filter=pending')}>
-          <i className="fas fa-clock"></i> View Pending ({stats.pending})
+          ⏳ View Pending ({stats.pending})
         </button>
         <button className="action-btn secondary" onClick={() => navigate('/candidates-list?filter=approved')}>
-          <i className="fas fa-check-circle"></i> View Approved ({stats.approved})
+          ✅ View Approved ({stats.approved})
         </button>
         <button className="action-btn secondary" onClick={() => navigate('/candidates-list?filter=all')}>
-          <i className="fas fa-users"></i> View All Candidates
+          👥 View All Candidates
         </button>
       </div>
     </div>
