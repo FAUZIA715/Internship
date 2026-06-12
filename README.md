@@ -12,8 +12,6 @@ Module 1 handles all authentication for the VeriFlow Automated Background Verifi
 
 ## Module Scope
 
-This module is strictly scoped to **Module 1: User & Authentication** as defined in the project scoping document.
-
 | Feature | Description |
 |---|---|
 | Separate Portals | Candidate portal and HR portal with different UI |
@@ -152,17 +150,6 @@ cd backend
 npm install
 ```
 
-Create `.env` file in `backend/` folder:
-
-```env
-PORT=5000
-MONGO_URI=your_mongodb_atlas_uri
-JWT_SECRET=your_jwt_secret
-JWT_EXPIRE=7d
-EMAIL=your.gmail@gmail.com
-EMAIL_PASSWORD=your_16_char_app_password
-```
-
 Seed the database (creates test users):
 
 ```bash
@@ -193,13 +180,6 @@ Frontend runs on: `http://localhost:5173`
 
 > Run `npm run seed` in backend before testing
 
-| Role | Email | Password | Portal |
-|---|---|---|---|
-| HR | idlikekps@gmail.com | Hr@Veri2026! | localhost:5173/hr/login |
-| Candidate | poddarsrinjoy70@gmail.com | Cand@Temp2026! | localhost:5173/candidate/login |
-
-> Note: Candidate has `isFirstLogin: true` — will be forced to change password on first login.
-
 ---
 
 ## Security Features
@@ -214,39 +194,6 @@ Frontend runs on: `http://localhost:5173`
 ✅ Reset token expires in 15 minutes
 ✅ Reset token cleared after single use
 ✅ Strong password policy enforced at both ends
-✅ .env excluded from git
-```
-
----
-
-## Shared Utilities (for other modules)
-
-This module provides shared utilities that other modules should import:
-
-**`backend/middleware/authMiddleware.js`**
-```javascript
-const { protect, authorize } = require('../middleware/authMiddleware');
-
-// Protect any route
-router.get('/your-route', protect, yourController);
-
-// Restrict to specific role
-router.get('/hr-only', protect, authorize('hr'), yourController);
-```
-
----
-
-## Integration Points
-
-| Module | Connection |
-|---|---|
-| Module 2 (Sachi) | Import `authMiddleware.js` to protect document upload routes |
-| Module 3 (Juhi) | Import `authMiddleware.js` to protect verification routes |
-| Module 4 (Srinjoy) | Uses `protect` middleware for report generation APIs |
-| Module 5.1 (Sachi) | Candidate dashboard at `/candidate/dashboard` — auth redirects here |
-| Module 5.2 (Juhi) | HR dashboard at `/hr/dashboard` — auth redirects here |
-
----
 
 ## Developer
 
