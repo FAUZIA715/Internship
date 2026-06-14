@@ -187,7 +187,7 @@ exports.generateReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid candidate ID' });
     }
 
-    // Get candidate from User model
+    // Get candidate from User model (Module 1 — Srinjoy)
     const candidate = await User.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ success: false, message: 'Candidate not found' });
@@ -197,18 +197,26 @@ exports.generateReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User is not a candidate' });
     }
 
-    // Get documents from Document model (Sachi's module)
-    // Using dynamic model reference to avoid hard dependency
-    let documents = [];
-    try {
-      const Document = mongoose.model('Document');
-      documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
-    } catch {
-      // Document model not registered yet — use empty array
-      documents = [];
-    }
+    // ─── INTEGRATION POINT: Sachi — Module 2 (Document Management) ───────────
+    // After Sachi's module is merged into this project, replace the line below
+    // with the actual document fetch from her Document model.
+    //
+    // Step 1: Import her model at the top of this file:
+    //   const Document = require('../models/Document');
+    //
+    // Step 2: Replace the empty array below with:
+    //   const documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
+    //
+    // Her Document model must have these fields for this to work:
+    //   candidateId  → ObjectId referencing User._id (Module 1)
+    //   documentType → 'aadhaar' | 'pan' | 'degree' | 'employment' | 'address'
+    //   status       → 'pending' | 'verified' | 'rejected'
+    //   uploadDate   → Date (when candidate uploaded)
+    //   verifiedAt   → Date (when HR marked verified)
+    // ─────────────────────────────────────────────────────────────────────────
+    const documents = []; // ← Sachi: replace this line after merge
 
-    // Map documents
+    // Map documents to standard format
     const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
     const mappedDocs = docTypes.map(type => {
       const doc = documents.find(d => d.documentType === type);
@@ -234,7 +242,7 @@ exports.generateReport = async (req, res) => {
       generatedByName: req.user.name
     };
 
-    const { fileName, filePath } = await generatePDF(reportData);
+    const { fileName } = await generatePDF(reportData);
 
     // Save report to DB
     const report = await Report.create({
@@ -249,6 +257,7 @@ exports.generateReport = async (req, res) => {
     });
 
     // Send email to candidate
+    // Note: email failure does not block report generation
     try {
       await sendEmail({
         to: candidate.email,
@@ -276,8 +285,7 @@ exports.generateReport = async (req, res) => {
         `
       });
     } catch (emailErr) {
-      // Email failure should not block report generation
-      console.log('Email sending failed:', emailErr.message);
+      console.log('Report email failed:', emailErr.message);
     }
 
     res.status(201).json({
@@ -382,7 +390,7 @@ exports.downloadReport = async (req, res) => {
 
     // Candidate can only download their own report
     if (req.user.role === 'candidate' &&
-        report.candidateId.toString() !== req.user.id) {
+      report.candidateId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
