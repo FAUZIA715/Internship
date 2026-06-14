@@ -21,7 +21,7 @@ const seed = async () => {
 
     const salt = await bcrypt.genSalt(10);
 
-    // HR user — strong password
+    // HR user
     const hrPassword = await bcrypt.hash('Hr@Veri2026!', salt);
     await User.create({
       name: 'HR Manager',
@@ -31,14 +31,15 @@ const seed = async () => {
       isFirstLogin: false
     });
 
-    // Candidate user — temp password (isFirstLogin: true)
+    // Candidate user
     const candidatePassword = await bcrypt.hash('Cand@Temp2026!', salt);
-    await User.create({
+    const candidate = await User.create({
       name: 'Test Candidate',
       email: 'poddarsrinjoy70@gmail.com',
       password: candidatePassword,
       role: 'candidate',
-      isFirstLogin: true
+      isFirstLogin: true,
+      position: 'Software Engineer'
     });
 
     console.log('\n✅ Seeding complete\n');
@@ -50,7 +51,8 @@ const seed = async () => {
     console.log('  Email:    poddarsrinjoy70@gmail.com');
     console.log('  Password: Cand@Temp2026!');
     console.log('  Portal:   localhost:5173/candidate/login');
-    console.log('  Note:     isFirstLogin = true (forced password change)\n');
+    console.log('  ID:       ' + candidate._id);
+    console.log('  Note:     isFirstLogin = true\n');
 
     process.exit(0);
   } catch (err) {

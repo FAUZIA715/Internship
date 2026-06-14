@@ -23,6 +23,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['candidate', 'hr'],
     required: [true, 'Role is required']
   },
+  position: {
+    type: String,
+    default: null  // Set when HR creates candidate account
+  },
   isFirstLogin: {
     type: Boolean,
     default: true
