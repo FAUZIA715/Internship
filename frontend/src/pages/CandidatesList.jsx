@@ -27,7 +27,7 @@ const CandidatesList = () => {
 
   const fetchCandidates = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/hr/candidates');
+      const response = await fetch('http://localhost:5001/api/hr/candidates');
       const data = await response.json();
       setCandidates(data);
     } catch (err) {
