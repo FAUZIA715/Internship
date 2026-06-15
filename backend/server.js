@@ -1,28 +1,27 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const hrRoutes = require('./routes/hrRoutes');
+
+dotenv.config();
 
 const app = express();
-
-// Connect Database
-connectDB();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB Atlas connected'))
+  .catch(err => console.log('❌ MongoDB error:', err.message));
+
+app.use('/api/hr', hrRoutes);
+
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'BGV System API running',
-    status: 'OK'
-  });
+  res.json({ message: 'HR API is running' });
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
-module.exports = app;
