@@ -17,7 +17,7 @@ const CandidateDetails = () => {
 
   const fetchCandidate = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}`);
+      const response = await fetch(`http://localhost:5001/api/hr/candidates/${id}`);
       const data = await response.json();
       setCandidate(data);
       setDegreeStatus(data.degreeStatus || 'Pending');
@@ -35,7 +35,7 @@ const CandidateDetails = () => {
 
   const handleUpdateDegree = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-degree`, {
+      const response = await fetch(`http://localhost:5001/api/hr/candidates/${id}/update-degree`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: degreeStatus })
@@ -54,7 +54,7 @@ const CandidateDetails = () => {
 
   const handleUpdateEmployment = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-employment`, {
+      const response = await fetch(`http://localhost:5001/api/hr/candidates/${id}/update-employment`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: employmentStatus })
@@ -84,7 +84,7 @@ const CandidateDetails = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:5000/api/reports/generate/${candidate._id}`, {
+      const response = await fetch(`http://localhost:5001/api/reports/generate/${candidate._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ const CandidateDetails = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/reports/download/${candidate.reportId}`, {
+      const response = await fetch(`http://localhost:5001/api/reports/download/${candidate.reportId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
