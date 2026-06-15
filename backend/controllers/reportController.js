@@ -6,6 +6,23 @@ const Report = require('../models/Report');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 
+// ─── INTEGRATION: Sachi's Document model (Module 2) ──────────────
+// Document model fields used:
+//   candidateId  → ObjectId (ref: User._id)
+//   documentType → 'aadhaar' | 'pan' | 'degree' | 'employment' | 'address'
+//   status       → 'pending' | 'verified' | 'rejected'
+//   uploadDate   → Date
+//   verifiedAt   → Date
+// After merge, this path must resolve correctly
+let Document;
+try {
+  Document = mongoose.model('Document');
+} catch {
+  // Model not registered yet — will be registered when Sachi's
+  // module is merged and her Document.js is imported in server.js
+  Document = null;
+}
+
 // ─── Ensure reports directory exists ─────────────────────────────
 const reportsDir = path.join(__dirname, '..', 'reports');
 if (!fs.existsSync(reportsDir)) {
@@ -62,11 +79,8 @@ const generatePDF = (reportData) => {
       .text('Candidate Information', 50, 100);
 
     doc.moveTo(50, 118).lineTo(545, 118).strokeColor('#e5e7eb').lineWidth(1).stroke();
-    doc.moveDown(0.5);
 
     const infoY = 125;
-    doc.fontSize(11).font('Helvetica-Bold').fillColor('#374151');
-
     const info = [
       { label: 'Full Name', value: reportData.candidateName },
       { label: 'Email Address', value: reportData.candidateEmail },
@@ -81,8 +95,6 @@ const generatePDF = (reportData) => {
       doc.font('Helvetica').fillColor('#6b7280').text(item.value, 200, y);
     });
 
-    doc.moveDown(6);
-
     // ── Document Verification Status ──
     const tableY = infoY + (info.length * 22) + 20;
 
@@ -93,7 +105,6 @@ const generatePDF = (reportData) => {
 
     doc.moveTo(50, tableY + 18).lineTo(545, tableY + 18).strokeColor('#e5e7eb').lineWidth(1).stroke();
 
-    // Table header
     const headerY = tableY + 25;
     doc.rect(50, headerY, 495, 22).fill('#f3f4f6');
     doc.fillColor('#374151').fontSize(10).font('Helvetica-Bold');
@@ -102,7 +113,6 @@ const generatePDF = (reportData) => {
     doc.text('Upload Date', 360, headerY + 6);
     doc.text('Verified Date', 455, headerY + 6);
 
-    // Table rows
     const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
     let rowY = headerY + 28;
 
@@ -112,12 +122,10 @@ const generatePDF = (reportData) => {
       const uploadDate = doc_data?.uploadDate ? new Date(doc_data.uploadDate).toLocaleDateString('en-IN') : '—';
       const verifiedDate = doc_data?.verifiedAt ? new Date(doc_data.verifiedAt).toLocaleDateString('en-IN') : '—';
 
-      // Row background
       if (i % 2 === 0) {
         doc.rect(50, rowY - 4, 495, 22).fill('#fafafa');
       }
 
-      // Status color
       const statusColors = {
         verified: '#16a34a',
         rejected: '#dc2626',
@@ -182,12 +190,11 @@ exports.generateReport = async (req, res) => {
   try {
     const { candidateId } = req.params;
 
-    // Validate candidateId
     if (!mongoose.Types.ObjectId.isValid(candidateId)) {
       return res.status(400).json({ success: false, message: 'Invalid candidate ID' });
     }
 
-    // Get candidate from User model (Module 1 — Srinjoy)
+    // Get candidate from User model (Module 1)
     const candidate = await User.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ success: false, message: 'Candidate not found' });
@@ -197,26 +204,23 @@ exports.generateReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'User is not a candidate' });
     }
 
-    // ─── INTEGRATION POINT: Sachi — Module 2 (Document Management) ───────────
-    // After Sachi's module is merged into this project, replace the line below
-    // with the actual document fetch from her Document model.
-    //
-    // Step 1: Import her model at the top of this file:
-    //   const Document = require('../models/Document');
-    //
-    // Step 2: Replace the empty array below with:
-    //   const documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
-    //
-    // Her Document model must have these fields for this to work:
-    //   candidateId  → ObjectId referencing User._id (Module 1)
+    // ─── Fetch documents from Sachi's Document model ──────────────
+    // Document model (Module 2 — Sachi) fields used:
+    //   candidateId  → matches User._id
     //   documentType → 'aadhaar' | 'pan' | 'degree' | 'employment' | 'address'
     //   status       → 'pending' | 'verified' | 'rejected'
-    //   uploadDate   → Date (when candidate uploaded)
-    //   verifiedAt   → Date (when HR marked verified)
-    // ─────────────────────────────────────────────────────────────────────────
-    const documents = []; // ← Sachi: replace this line after merge
+    //   uploadDate   → Date
+    //   verifiedAt   → Date
+    //
+    // After merge: ensure Document model is registered in server.js
+    // by requiring Sachi's Document.js before this controller runs
+    // ─────────────────────────────────────────────────────────────
+    let documents = [];
+    if (Document) {
+      documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
+    }
 
-    // Map documents to standard format
+    // Map to standard format
     const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
     const mappedDocs = docTypes.map(type => {
       const doc = documents.find(d => d.documentType === type);
@@ -244,7 +248,7 @@ exports.generateReport = async (req, res) => {
 
     const { fileName } = await generatePDF(reportData);
 
-    // Save report to DB
+    // Save to DB
     const report = await Report.create({
       candidateId,
       candidateName: candidate.name,
@@ -256,8 +260,7 @@ exports.generateReport = async (req, res) => {
       generatedBy: req.user.id
     });
 
-    // Send email to candidate
-    // Note: email failure does not block report generation
+    // Email candidate
     try {
       await sendEmail({
         to: candidate.email,
@@ -312,22 +315,14 @@ exports.getReportByCandidate = async (req, res) => {
   try {
     const { candidateId } = req.params;
 
-    // Candidates can only see their own report
     if (req.user.role === 'candidate' && req.user.id !== candidateId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    const report = await Report.findOne({ candidateId })
-      .sort({ generatedAt: -1 });
+    const report = await Report.findOne({ candidateId }).sort({ generatedAt: -1 });
 
     if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'No report found for this candidate'
-      });
+      return res.status(404).json({ success: false, message: 'No report found for this candidate' });
     }
 
     res.status(200).json({
@@ -388,7 +383,6 @@ exports.downloadReport = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
-    // Candidate can only download their own report
     if (req.user.role === 'candidate' &&
       report.candidateId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
