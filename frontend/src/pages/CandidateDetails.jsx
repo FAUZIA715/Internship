@@ -73,6 +73,7 @@ const CandidateDetails = () => {
 
   // THIS IS THE ONLY NEW FUNCTION - Generate Report
   const handleGenerateReport = async () => {
+    alert("Button clicked");
     if (candidate?.hrReviewStatus !== 'Approved') {
       setMessage('❌ Cannot generate report. Candidate not approved yet.');
       setTimeout(() => setMessage(''), 3000);
