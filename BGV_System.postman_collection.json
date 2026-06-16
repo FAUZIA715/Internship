@@ -1,0 +1,135 @@
+{
+  "info": {
+    "name": "BGV System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register HR",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HR Manager\",\n  \"email\": \"hr@veriflow.com\",\n  \"password\": \"hr123\",\n  \"role\": \"hr\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Candidate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Candidate\",\n  \"email\": \"candidate@veriflow.com\",\n  \"password\": \"cand123\",\n  \"role\": \"candidate\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Candidate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@veriflow.com\",\n  \"password\": \"cand123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login HR",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hr@veriflow.com\",\n  \"password\": \"hr123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "header": [{"key": "Authorization", "value": "Bearer {{candidateToken}}"}],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "documentType", "value": "degree"},
+                {"key": "documentName", "value": "Degree Certificate"},
+                {"key": "document", "type": "file", "src": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Documents",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents",
+            "header": [{"key": "Authorization", "value": "Bearer {{candidateToken}}"}]
+          }
+        },
+        {
+          "name": "HR - Get All Candidates",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/hr/candidates",
+            "header": [{"key": "Authorization", "value": "Bearer {{hrToken}}"}]
+          }
+        },
+        {
+          "name": "HR - Verify Document",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}/verify",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{hrToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"verified\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/download/{{documentId}}",
+            "header": [{"key": "Authorization", "value": "Bearer {{candidateToken}}"}]
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}",
+            "header": [{"key": "Authorization", "value": "Bearer {{candidateToken}}"}]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:5000"},
+    {"key": "candidateToken", "value": ""},
+    {"key": "hrToken", "value": ""},
+    {"key": "documentId", "value": ""}
+  ]
+}
