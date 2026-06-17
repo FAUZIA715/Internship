@@ -61,101 +61,31 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-96">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <i className="fas fa-shield-alt text-white text-3xl"></i>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-800">VeriFlow</h2>
-          <p className="text-gray-500 mt-2">Automated Background Verification</p>
-        </div>
+    <BrowserRouter>
+      <Routes>
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <i className="fas fa-envelope mr-2 text-gray-400"></i>Email Address
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
+        {/* Default redirect */}
+        <Route path="/" element={<Navigate to="/candidate/login" />} />
 
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <i className="fas fa-lock mr-2 text-gray-400"></i>Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+        {/* ── Module 1: Auth Pages (Srinjoy) ── */}
+        <Route path="/candidate/login" element={<CandidateLogin />} />
+        <Route path="/hr/login" element={<HRLogin />} />
+        <Route path="/:portalRole/change-password" element={<ChangePasswordPage />} />
+        <Route path="/:portalRole/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/:portalRole/reset-password/:token" element={<ResetPasswordPage />} />
 
-          <div className="flex items-center justify-between mb-6">
-            <label className="flex items-center cursor-pointer">
-              <input type="checkbox" id="rememberMe" className="w-4 h-4 text-blue-600" />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowModal(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Forgot password?
-            </button>
-          </div>
+        {/* ── Module 5.1: Candidate Dashboard (Sachi) ── */}
+        {/* Redirected here after candidate login */}
+        {/* Uncomment after merge with Sachi's branch */}
+        {/* <Route path="/candidate/dashboard" element={<CandidateDashboard />} /> */}
 
-          {message && (
-            <div className={`text-sm rounded-lg p-3 mb-4 ${message.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-              {message}
-            </div>
-          )}
+        {/* ── Module 5.2: HR Dashboard (Juhi) ── */}
+        {/* Redirected here after HR login */}
+        {/* Uncomment after merge with Juhi's branch */}
+        {/* <Route path="/hr/dashboard" element={<HRDashboard />} /> */}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg disabled:opacity-50"
-          >
-            {loading ? <i className="fas fa-spinner fa-spin"></i> : 'Sign In'}
-          </button>
-        </form>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Reset Password</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-            <p className="text-gray-600 mb-6">Enter your email to receive a reset link.</p>
-            <form onSubmit={handleForgotPassword}>
-              <input
-                type="email"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none mb-4"
-                placeholder="Enter your email"
-                required
-              />
-              <button type="submit" className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl">
-                Send Reset Link
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
