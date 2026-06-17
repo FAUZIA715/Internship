@@ -29,7 +29,7 @@ function CandidateLogin() {
           if (data.isFirstLogin) {
             navigate('/candidate/change-password');
           } else {
-            navigate('/candidate/dashboard');
+            navigate('/candidate/dashboard'); // Sachi's Module 5.1
           }
         }, 1000);
       } else {

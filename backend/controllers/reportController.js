@@ -1,25 +1,16 @@
-const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
+const htmlPdf = require('html-pdf-node');
 
 // ─── INTEGRATION: Sachi's Document model (Module 2) ──────────────
-// Document model fields used:
-//   candidateId  → ObjectId (ref: User._id)
-//   documentType → 'aadhaar' | 'pan' | 'degree' | 'employment' | 'address'
-//   status       → 'pending' | 'verified' | 'rejected'
-//   uploadDate   → Date
-//   verifiedAt   → Date
-// After merge, this path must resolve correctly
 let Document;
 try {
   Document = mongoose.model('Document');
 } catch {
-  // Model not registered yet — will be registered when Sachi's
-  // module is merged and her Document.js is imported in server.js
   Document = null;
 }
 
@@ -49,138 +40,123 @@ const getFinalDecision = (documents) => {
   return 'Pending';
 };
 
-// ─── Generate PDF ─────────────────────────────────────────────────
-const generatePDF = (reportData) => {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    const fileName = `BGV_Report_${reportData.candidateId}_${Date.now()}.pdf`;
-    const filePath = path.join(reportsDir, fileName);
-    const stream = fs.createWriteStream(filePath);
+// ─── Helper: Status badge HTML ───────────────────────────────────
+const getStatusBadge = (status) => {
+  const map = {
+    verified:     { text: '✓ Verified',     color: '#16a34a', bg: '#f0fdf4' },
+    rejected:     { text: '✗ Rejected',     color: '#dc2626', bg: '#fef2f2' },
+    pending:      { text: '⏳ Pending',     color: '#d97706', bg: '#fffbeb' },
+    not_uploaded: { text: '— Not Uploaded', color: '#9ca3af', bg: '#f9fafb' }
+  };
+  const s = map[status] || map['not_uploaded'];
+  return `<span style="color:${s.color};background:${s.bg};padding:2px 8px;border-radius:4px;font-weight:600;font-size:12px;">${s.text}</span>`;
+};
 
-    doc.pipe(stream);
+// ─── Generate PDF from HTML ───────────────────────────────────────
+const generatePDF = async (reportData) => {
+  const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
+  const decision = reportData.finalDecision;
 
-    // ── Header ──
-    doc.rect(0, 0, doc.page.width, 80).fill('#667eea');
-    doc.fillColor('white')
-      .fontSize(22)
-      .font('Helvetica-Bold')
-      .text('VeriFlow BGV System', 50, 20);
-    doc.fontSize(11)
-      .font('Helvetica')
-      .text('Background Verification Report', 50, 48);
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, 62);
+  const decisionColors = {
+    'Clear':     { bg: '#f0fdf4', border: '#86efac', text: '#16a34a' },
+    'Not Clear': { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+    'Pending':   { bg: '#fffbeb', border: '#fde68a', text: '#d97706' }
+  };
+  const dc = decisionColors[decision] || decisionColors['Pending'];
 
-    doc.moveDown(3);
+  const docRows = docTypes.map((type, i) => {
+    const doc = reportData.documents.find(d => d.documentType === type);
+    const status = doc?.status || 'not_uploaded';
+    const uploadDate = doc?.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('en-IN') : '—';
+    const verifiedDate = doc?.verifiedAt ? new Date(doc.verifiedAt).toLocaleDateString('en-IN') : '—';
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
 
-    // ── Candidate Info ──
-    doc.fillColor('#1f2937')
-      .fontSize(14)
-      .font('Helvetica-Bold')
-      .text('Candidate Information', 50, 100);
+    return `
+      <tr style="background:${bg};">
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">${getDocLabel(type)}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;">${getStatusBadge(status)}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${uploadDate}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${verifiedDate}</td>
+      </tr>
+    `;
+  }).join('');
 
-    doc.moveTo(50, 118).lineTo(545, 118).strokeColor('#e5e7eb').lineWidth(1).stroke();
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8"/>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; color: #1f2937; background: white; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); padding: 30px 40px; color: white; }
+        .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header p { font-size: 13px; opacity: 0.85; }
+        .content { padding: 30px 40px; }
+        .section-title { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 6px; margin-top: 24px; }
+        .divider { height: 1px; background: #e5e7eb; margin-bottom: 14px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 6px 0; font-size: 13px; vertical-align: top; }
+        .info-table .label { font-weight: 700; color: #374151; width: 160px; }
+        .info-table .value { color: #6b7280; }
+        .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        .doc-table th { background: #f3f4f6; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #374151; border: 1px solid #e5e7eb; }
+        .doc-table td { border: 1px solid #e5e7eb; }
+        .decision-box { background: ${dc.bg}; border: 2px solid ${dc.border}; border-radius: 8px; padding: 16px 20px; margin-bottom: 30px; }
+        .decision-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .decision-value { font-size: 22px; font-weight: 700; color: ${dc.text}; }
+        .footer { border-top: 1px solid #e5e7eb; padding: 16px 40px; text-align: center; font-size: 11px; color: #9ca3af; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>VeriFlow BGV System</h1>
+        <p>Background Verification Report &nbsp;|&nbsp; Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+      </div>
+      <div class="content">
+        <div class="section-title">Candidate Information</div>
+        <div class="divider"></div>
+        <table class="info-table">
+          <tr><td class="label">Full Name</td><td class="value">${reportData.candidateName}</td></tr>
+          <tr><td class="label">Email Address</td><td class="value">${reportData.candidateEmail}</td></tr>
+          <tr><td class="label">Position Applied</td><td class="value">${reportData.position}</td></tr>
+          <tr><td class="label">Generated By</td><td class="value">${reportData.generatedByName || 'HR Manager'}</td></tr>
+          <tr><td class="label">Report Date</td><td class="value">${new Date().toLocaleDateString('en-IN')}</td></tr>
+        </table>
+        <div class="section-title">Document Verification Status</div>
+        <div class="divider"></div>
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Document Type</th>
+              <th>Status</th>
+              <th>Upload Date</th>
+              <th>Verified Date</th>
+            </tr>
+          </thead>
+          <tbody>${docRows}</tbody>
+        </table>
+        <div class="section-title">Final Decision</div>
+        <div class="divider"></div>
+        <div class="decision-box">
+          <div class="decision-label">BGV FINAL DECISION</div>
+          <div class="decision-value">${decision.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="footer">
+        This report is generated by VeriFlow BGV System and is confidential. &nbsp;|&nbsp; Aibi Tech © 2026
+      </div>
+    </body>
+    </html>
+  `;
 
-    const infoY = 125;
-    const info = [
-      { label: 'Full Name', value: reportData.candidateName },
-      { label: 'Email Address', value: reportData.candidateEmail },
-      { label: 'Position Applied', value: reportData.position },
-      { label: 'Report Generated By', value: reportData.generatedByName || 'HR Manager' },
-      { label: 'Report Date', value: new Date().toLocaleDateString('en-IN') }
-    ];
-
-    info.forEach((item, i) => {
-      const y = infoY + (i * 22);
-      doc.font('Helvetica-Bold').fillColor('#374151').fontSize(10).text(item.label + ':', 50, y);
-      doc.font('Helvetica').fillColor('#6b7280').text(item.value, 200, y);
-    });
-
-    // ── Document Verification Status ──
-    const tableY = infoY + (info.length * 22) + 20;
-
-    doc.fillColor('#1f2937')
-      .fontSize(14)
-      .font('Helvetica-Bold')
-      .text('Document Verification Status', 50, tableY);
-
-    doc.moveTo(50, tableY + 18).lineTo(545, tableY + 18).strokeColor('#e5e7eb').lineWidth(1).stroke();
-
-    const headerY = tableY + 25;
-    doc.rect(50, headerY, 495, 22).fill('#f3f4f6');
-    doc.fillColor('#374151').fontSize(10).font('Helvetica-Bold');
-    doc.text('Document Type', 58, headerY + 6);
-    doc.text('Status', 260, headerY + 6);
-    doc.text('Upload Date', 360, headerY + 6);
-    doc.text('Verified Date', 455, headerY + 6);
-
-    const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
-    let rowY = headerY + 28;
-
-    docTypes.forEach((type, i) => {
-      const doc_data = reportData.documents.find(d => d.documentType === type);
-      const status = doc_data?.status || 'not_uploaded';
-      const uploadDate = doc_data?.uploadDate ? new Date(doc_data.uploadDate).toLocaleDateString('en-IN') : '—';
-      const verifiedDate = doc_data?.verifiedAt ? new Date(doc_data.verifiedAt).toLocaleDateString('en-IN') : '—';
-
-      if (i % 2 === 0) {
-        doc.rect(50, rowY - 4, 495, 22).fill('#fafafa');
-      }
-
-      const statusColors = {
-        verified: '#16a34a',
-        rejected: '#dc2626',
-        pending: '#d97706',
-        not_uploaded: '#9ca3af'
-      };
-
-      const statusLabels = {
-        verified: '✓ Verified',
-        rejected: '✗ Rejected',
-        pending: '⏳ Pending',
-        not_uploaded: '— Not Uploaded'
-      };
-
-      doc.fillColor('#374151').fontSize(10).font('Helvetica');
-      doc.text(getDocLabel(type), 58, rowY);
-      doc.fillColor(statusColors[status] || '#9ca3af').font('Helvetica-Bold');
-      doc.text(statusLabels[status] || status, 260, rowY);
-      doc.fillColor('#6b7280').font('Helvetica');
-      doc.text(uploadDate, 360, rowY);
-      doc.text(verifiedDate, 455, rowY);
-
-      rowY += 22;
-    });
-
-    // ── Final Decision ──
-    const decisionY = rowY + 30;
-    const decision = reportData.finalDecision;
-
-    const decisionColors = {
-      'Clear': { bg: '#f0fdf4', border: '#86efac', text: '#16a34a' },
-      'Not Clear': { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
-      'Pending': { bg: '#fffbeb', border: '#fde68a', text: '#d97706' }
-    };
-
-    const colors = decisionColors[decision] || decisionColors['Pending'];
-
-    doc.rect(50, decisionY, 495, 50).fill(colors.bg).stroke(colors.border);
-    doc.fillColor('#374151').fontSize(12).font('Helvetica-Bold')
-      .text('FINAL DECISION', 70, decisionY + 10);
-    doc.fillColor(colors.text).fontSize(16).font('Helvetica-Bold')
-      .text(decision.toUpperCase(), 70, decisionY + 26);
-
-    // ── Footer ──
-    const footerY = doc.page.height - 60;
-    doc.moveTo(50, footerY).lineTo(545, footerY).strokeColor('#e5e7eb').lineWidth(1).stroke();
-    doc.fillColor('#9ca3af').fontSize(9).font('Helvetica')
-      .text('This report is generated by VeriFlow BGV System and is confidential.', 50, footerY + 10, { align: 'center' })
-      .text('Aibi Tech © 2026', 50, footerY + 22, { align: 'center' });
-
-    doc.end();
-
-    stream.on('finish', () => resolve({ fileName, filePath }));
-    stream.on('error', reject);
-  });
+  const fileName = `BGV_Report_${reportData.candidateId}_${Date.now()}.pdf`;
+  const filePath = path.join(reportsDir, fileName);
+  const file = { content: html };
+  const options = { format: 'A4', margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' } };
+  const pdfBuffer = await htmlPdf.generatePdf(file, options);
+  fs.writeFileSync(filePath, pdfBuffer);
+  return { fileName, filePath };
 };
 
 // ─── Generate Report ──────────────────────────────────────────────
@@ -194,7 +170,6 @@ exports.generateReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid candidate ID' });
     }
 
-    // Get candidate from User model (Module 1)
     const candidate = await User.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ success: false, message: 'Candidate not found' });
@@ -205,22 +180,11 @@ exports.generateReport = async (req, res) => {
     }
 
     // ─── Fetch documents from Sachi's Document model ──────────────
-    // Document model (Module 2 — Sachi) fields used:
-    //   candidateId  → matches User._id
-    //   documentType → 'aadhaar' | 'pan' | 'degree' | 'employment' | 'address'
-    //   status       → 'pending' | 'verified' | 'rejected'
-    //   uploadDate   → Date
-    //   verifiedAt   → Date
-    //
-    // After merge: ensure Document model is registered in server.js
-    // by requiring Sachi's Document.js before this controller runs
-    // ─────────────────────────────────────────────────────────────
     let documents = [];
     if (Document) {
       documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
     }
 
-    // Map to standard format
     const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
     const mappedDocs = docTypes.map(type => {
       const doc = documents.find(d => d.documentType === type);
@@ -232,10 +196,24 @@ exports.generateReport = async (req, res) => {
       };
     });
 
-    // Calculate final decision
+    // ─── Verification Complete Check (Fauzia's requirement) ───────
+    // Report can only be generated after ALL documents have been
+    // processed — no document can be pending or not uploaded
+    const unprocessed = mappedDocs.filter(
+      d => d.status === 'pending' || d.status === 'not_uploaded'
+    );
+
+    if (unprocessed.length > 0) {
+      const names = unprocessed.map(d => getDocLabel(d.documentType)).join(', ');
+      return res.status(400).json({
+        success: false,
+        message: `Cannot generate report. The following documents are still pending: ${names}. All documents must be verified or rejected before generating the BGV report.`
+      });
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const finalDecision = getFinalDecision(mappedDocs);
 
-    // Generate PDF
     const reportData = {
       candidateId,
       candidateName: candidate.name,
@@ -248,7 +226,6 @@ exports.generateReport = async (req, res) => {
 
     const { fileName } = await generatePDF(reportData);
 
-    // Save to DB
     const report = await Report.create({
       candidateId,
       candidateName: candidate.name,
@@ -260,30 +237,22 @@ exports.generateReport = async (req, res) => {
       generatedBy: req.user.id
     });
 
-    // Email candidate
     try {
       await sendEmail({
         to: candidate.email,
         subject: 'VeriFlow BGV — Your Background Verification Report',
         html: `
-          <div style="font-family: Inter, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px;">
-              <h1 style="color: white; margin: 0; font-size: 20px;">VeriFlow BGV System</h1>
+          <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:24px;border-radius:8px;text-align:center;margin-bottom:24px;">
+              <h1 style="color:white;margin:0;font-size:20px;">VeriFlow BGV System</h1>
             </div>
-            <h2 style="color: #1f2937;">Your BGV Report is Ready</h2>
-            <p style="color: #6b7280; margin: 16px 0;">
-              Dear ${candidate.name},<br><br>
-              Your Background Verification Report has been generated.
-            </p>
-            <div style="background: ${finalDecision === 'Clear' ? '#f0fdf4' : finalDecision === 'Not Clear' ? '#fef2f2' : '#fffbeb'}; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center;">
-              <p style="font-size: 13px; color: #6b7280; margin: 0 0 4px;">Final Decision</p>
-              <p style="font-size: 20px; font-weight: 700; color: ${finalDecision === 'Clear' ? '#16a34a' : finalDecision === 'Not Clear' ? '#dc2626' : '#d97706'}; margin: 0;">
-                ${finalDecision.toUpperCase()}
-              </p>
+            <h2 style="color:#1f2937;">Your BGV Report is Ready</h2>
+            <p style="color:#6b7280;margin:16px 0;">Dear ${candidate.name},<br><br>Your Background Verification Report has been generated.</p>
+            <div style="background:${finalDecision === 'Clear' ? '#f0fdf4' : finalDecision === 'Not Clear' ? '#fef2f2' : '#fffbeb'};border-radius:8px;padding:16px;margin:16px 0;text-align:center;">
+              <p style="font-size:13px;color:#6b7280;margin:0 0 4px;">Final Decision</p>
+              <p style="font-size:20px;font-weight:700;color:${finalDecision === 'Clear' ? '#16a34a' : finalDecision === 'Not Clear' ? '#dc2626' : '#d97706'};margin:0;">${finalDecision.toUpperCase()}</p>
             </div>
-            <p style="color: #6b7280; font-size: 13px;">
-              Please login to your VeriFlow portal to download the full report.
-            </p>
+            <p style="color:#6b7280;font-size:13px;">Please login to your VeriFlow portal to download the full report.</p>
           </div>
         `
       });
@@ -310,7 +279,7 @@ exports.generateReport = async (req, res) => {
 
 // ─── Get Report by Candidate ──────────────────────────────────────
 // @route   GET /api/reports/candidate/:candidateId
-// @access  Protected (candidate sees own, hr sees all)
+// @access  Protected
 exports.getReportByCandidate = async (req, res) => {
   try {
     const { candidateId } = req.params;
