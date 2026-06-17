@@ -66,14 +66,11 @@ function ChangePasswordPage() {
       const data = await api.changePassword({ oldPassword, newPassword });
       if (data.success) {
         setSuccess('✅ Password updated successfully! Redirecting...');
-        
-        // Update isFirstLogin in localStorage
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
         userData.isFirstLogin = false;
         localStorage.setItem('user', JSON.stringify(userData));
         
         setTimeout(() => {
-          // ✅ REDIRECT TO YOUR DASHBOARD
           window.location.href = 'http://localhost:5173/dashboard';
         }, 1500);
       } else {
