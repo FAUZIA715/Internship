@@ -23,9 +23,13 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 
 // ─── Module 2: Document Management (Sachi) ───────────────────────
-// Sachi: uncomment and add your routes here after merge
-// const documentRoutes = require('./routes/documentRoutes');
-// app.use('/api/documents', documentRoutes);
+//Document Routes
+//const documentRoutes = require('./routes/documentRoutes');
+//app.use('/api/documents', documentRoutes);
+
+//Activity History Routes
+//const historyRoutes = require('./routes/historyRoutes');
+//app.use('/api/history', historyRoutes);
 
 // ─── Module 3: Document Verification + HR Dashboard (Juhi) ───────
 // Juhi: uncomment and add your routes here after merge
@@ -41,7 +45,7 @@ app.get('/', (req, res) => {
     modules: {
       'Module 1 - Authentication': '/api/auth',
       'Module 4 - Report Generation': '/api/reports',
-      'Module 2 - Document Management': '/api/documents (Sachi)',
+      //'Module 2 - Document Management': '/api/documents (Sachi)',
       'Module 3 - HR Dashboard': '/api/hr (Juhi)'
     }
   });

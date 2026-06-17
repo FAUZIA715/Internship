@@ -140,34 +140,65 @@
         }
 
         loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = usernameInput.value;
-            const password = passwordInput.value;
+    e.preventDefault();
+    const email = usernameInput.value;
+    const password = passwordInput.value;
 
-            loginText.classList.add('hidden');
-            loginLoader.classList.remove('hidden');
-            loginBtn.disabled = true;
+    loginText.classList.add('hidden');
+    loginLoader.classList.remove('hidden');
+    loginBtn.disabled = true;
 
-            setTimeout(() => {
-                if (email === 'admin@veriflow.com' && password === 'admin123') {
-                    saveCredentials(email, password);
-                    showMessage(loginMessage, '✅ Admin login successful! Redirecting...', false);
-                    setTimeout(() => alert('Welcome to Admin Dashboard'), 500);
-                } 
-                else if (email === 'candidate@veriflow.com' && password === 'cand123') {
-                    saveCredentials(email, password);
-                    showMessage(loginMessage, '✅ Candidate login successful! Redirecting...', false);
-                    setTimeout(() => alert('Welcome to Candidate Dashboard'), 500);
-                }
-                else {
-                    showMessage(loginMessage, '❌ Invalid credentials. Use admin@veriflow.com/admin123 or candidate@veriflow.com/cand123');
-                }
-                
-                loginText.classList.remove('hidden');
-                loginLoader.classList.add('hidden');
-                loginBtn.disabled = false;
-            }, 1000);
+    try {
+        // ✅ CALL REAL BACKEND API
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email, 
+                password, 
+                portalRole: 'candidate' 
+            })
         });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (rememberMeCheckbox.checked) {
+                localStorage.setItem('savedEmail', email);
+                localStorage.setItem('savedPassword', password);
+                localStorage.setItem('remember', 'true');
+            } else {
+                localStorage.removeItem('savedEmail');
+                localStorage.removeItem('savedPassword');
+                localStorage.setItem('remember', 'false');
+            }
+
+            // ✅ SAVE TOKEN AND USER DATA
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+
+            showMessage(loginMessage, '✅ Login successful! Redirecting...', false);
+
+            // ✅ REDIRECT TO YOUR DASHBOARD
+            setTimeout(() => {
+                if (data.user.role === 'candidate') {
+                    window.location.href = 'http://localhost:5173/dashboard';
+                } else if (data.user.role === 'hr') {
+                    window.location.href = 'http://localhost:5173/hr/dashboard';
+                }
+            }, 1000);
+        } else {
+            showMessage(loginMessage, data.message || '❌ Invalid credentials');
+        }
+    } catch (error) {
+        showMessage(loginMessage, '❌ Connection error. Is the backend running?');
+        console.error('Login error:', error);
+    } finally {
+        loginText.classList.remove('hidden');
+        loginLoader.classList.add('hidden');
+        loginBtn.disabled = false;
+    }
+});
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.type === 'password' ? 'text' : 'password';
