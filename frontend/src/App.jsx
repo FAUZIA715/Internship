@@ -8,16 +8,19 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // ─── Module 5.1: Candidate Dashboard (Sachi) ─────────────────────
-// Sachi: import your CandidateDashboard component here after merge
-// import CandidateDashboard from './components/Dashboard';
+// Sachi's Dashboard.js handles candidate view
+// Route: /candidate/dashboard
+// After merge: copy Sachi's Dashboard.js to src/pages/CandidateDashboard.jsx
+// import CandidateDashboard from './pages/CandidateDashboard';
 
 // ─── Module 5.2: HR Dashboard (Juhi) ─────────────────────────────
-// Juhi: import your HRDashboard component here after merge
+// Juhi's HRDashboard.jsx handles HR view
+// Route: /hr/dashboard
+// After merge: copy Juhi's HRDashboard.jsx to src/pages/HRDashboard.jsx
 // import HRDashboard from './pages/HRDashboard';
 
-// ─── Module 5.3: Admin Dashboard (Juhi) ──────────────────────────
-// Juhi: import your AdminDashboard component here after merge
-// import AdminDashboard from './pages/AdminDashboard';
+// NOTE: Sachi's HRDashboard.js is NOT connected here
+// HR Dashboard belongs to Juhi (Module 5.2)
 
 function App() {
   return (
@@ -35,18 +38,14 @@ function App() {
         <Route path="/:portalRole/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* ── Module 5.1: Candidate Dashboard (Sachi) ── */}
-        {/* Redirected from: /candidate/login after successful login */}
-        {/* Sachi: uncomment after merge */}
+        {/* Redirected here after candidate login */}
+        {/* Uncomment after merge with Sachi's branch */}
         {/* <Route path="/candidate/dashboard" element={<CandidateDashboard />} /> */}
 
         {/* ── Module 5.2: HR Dashboard (Juhi) ── */}
-        {/* Redirected from: /hr/login after successful login */}
-        {/* Juhi: uncomment after merge */}
+        {/* Redirected here after HR login */}
+        {/* Uncomment after merge with Juhi's branch */}
         {/* <Route path="/hr/dashboard" element={<HRDashboard />} /> */}
-
-        {/* ── Module 5.3: Admin Dashboard (Juhi) ── */}
-        {/* Juhi: uncomment after merge */}
-        {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
 
       </Routes>
     </BrowserRouter>
