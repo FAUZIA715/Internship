@@ -48,5 +48,13 @@ export const api = {
       body: JSON.stringify(data)
     });
     return res.json();
+  },
+
+  // Logout — clears session from localStorage
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
   }
+
 };
