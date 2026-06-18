@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './components/Dashboard.jsx';
-import HRDashboard from './components/HRDashboard.jsx';
-import UploadDocuments from './components/UploadDocuments.jsx';
-import ViewDocuments from './components/ViewDocuments.jsx';
-import UpdateDocument from './components/UpdateDocument.jsx';
-import './App.css';
+import Dashboard from './pages/Dashboard.jsx';
+import HRDashboard from './pages/HRDashboard.jsx';
+import UploadDocuments from './pages/UploadDocuments.jsx';
+import ViewDocuments from './pages/ViewDocuments.jsx';
+import UpdateDocument from './pages/UpdateDocument.jsx';
+import './index.css';
 
 const AUTH_SERVER_URL = 'http://localhost:5173';
 

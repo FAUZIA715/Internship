@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getDocuments, logout, getProfile } from '../services/api';
+import { getDocuments, logout, getProfile } from '../utils/api';
 
 const Dashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();

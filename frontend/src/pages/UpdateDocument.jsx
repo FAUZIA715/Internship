@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getDocuments, updateDocument, logout } from '../services/api';
+import { getDocuments, updateDocument, logout } from '../utils/api';
 
 const UpdateDocument = ({ user, onLogout }) => {
   const navigate = useNavigate();

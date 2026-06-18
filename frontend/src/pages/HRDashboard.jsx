@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllCandidates, getCandidateDetails, downloadDocument, verifyDocument, logout } from '../services/api';
+import { getAllCandidates, getCandidateDetails, downloadDocument, verifyDocument, logout } from '../utils/api';
 
 const HRDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
