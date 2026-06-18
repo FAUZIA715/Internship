@@ -1,0 +1,470 @@
+{
+  "info": {
+    "name": "BGV Complete System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "candidateId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication (Srinjoy's Module)",
+      "item": [
+        {
+          "name": "Register Candidate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Candidate\",\n  \"email\": \"candidate@veriflow.com\",\n  \"password\": \"cand123\",\n  \"role\": \"candidate\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register HR",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HR Manager\",\n  \"email\": \"hr@veriflow.com\",\n  \"password\": \"hr123\",\n  \"role\": \"hr\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Candidate",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@veriflow.com\",\n  \"password\": \"cand123\",\n  \"portalRole\": \"candidate\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login HR",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hr@veriflow.com\",\n  \"password\": \"hr123\",\n  \"portalRole\": \"hr\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/auth/change-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"cand123\",\n  \"newPassword\": \"NewStrong@Pass123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/profile",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@veriflow.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/reset-password/{{resetToken}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"ResetPass@123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Document Management (Juhi's Module)",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documentType",
+                  "value": "degree",
+                  "type": "text"
+                },
+                {
+                  "key": "documentName",
+                  "value": "Degree Certificate",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Aadhaar Card",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documentType",
+                  "value": "aadhaar",
+                  "type": "text"
+                },
+                {
+                  "key": "documentName",
+                  "value": "Aadhaar Card",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload PAN Card",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documentType",
+                  "value": "pan",
+                  "type": "text"
+                },
+                {
+                  "key": "documentName",
+                  "value": "PAN Card",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Employment Proof",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/documents/upload",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documentType",
+                  "value": "employment",
+                  "type": "text"
+                },
+                {
+                  "key": "documentName",
+                  "value": "Employment Proof",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All My Documents",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/download/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. HR Dashboard APIs",
+      "item": [
+        {
+          "name": "Get All Candidates (HR View)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/hr/candidates",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Candidate Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/documents/hr/candidate/{{candidateId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Verify Document",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"verified\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reject Document",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/documents/{{documentId}}/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\",\n  \"rejectionReason\": \"Document is blurry, please upload a clear copy\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Document History",
+      "item": [
+        {
+          "name": "Get Document History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/history/{{candidateId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
