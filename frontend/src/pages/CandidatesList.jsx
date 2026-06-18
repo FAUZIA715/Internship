@@ -130,5 +130,26 @@ const CandidatesList = () => {
     </div>
   );
 };
+// ─── GET HR STATUS ────────────────────────────────────────────────
+const getHrStatus = (candidate) => {
+  const docs = [
+    candidate.aadhaarStatus,
+    candidate.panStatus,
+    candidate.addressStatus,
+    candidate.degreeStatus,
+    candidate.employmentStatus
+  ];
+  
+  if (docs.every(s => s === 'verified')) return 'Approved';
+  if (docs.some(s => s === 'rejected')) return 'Rejected';
+  return 'Pending';
+};
 
+// ─── GET HR STATUS BADGE ─────────────────────────────────────────
+const getHrStatusBadge = (candidate) => {
+  const status = getHrStatus(candidate);
+  if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
+  if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
+  return <span className="status-pending">⏳ Pending</span>;
+};
 export default CandidatesList;

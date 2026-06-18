@@ -302,3 +302,17 @@
     flex-direction: column;
   }
 }
+.badge.not-uploaded {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-update:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
