@@ -7,13 +7,12 @@ const Dashboard = ({ user, onLogout }) => {
   const [documents, setDocuments] = useState([]);
   const [verificationSummary, setVerificationSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    // Check authentication on mount
+    // ✅ Check authentication on mount
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
@@ -38,7 +37,6 @@ const Dashboard = ({ user, onLogout }) => {
     fetchData();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -49,37 +47,28 @@ const Dashboard = ({ user, onLogout }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchData = async () => {
+  const fetchDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get user profile from Auth module
-      const profileData = await getProfile();
-      if (profileData.success) {
-        setUserProfile(profileData.user);
-        // Update localStorage with latest user data
-        localStorage.setItem('user', JSON.stringify(profileData.user));
-      }
-      
-      // Get documents from Document module
+      // ✅ Get documents from Document module (no auth profile call needed)
       const docData = await getDocuments();
       if (docData.success) {
         setDocuments(docData.documents || []);
         setVerificationSummary(docData.verificationSummary);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching documents:', error);
       
-      // Only logout if it's an auth error, not a connection error
+      // Only logout if it's an auth error
       if (error.message === 'Invalid token' || 
           error.message === 'No token' || 
           error.message === 'Not authorized - invalid token' ||
           error.message === 'User not found') {
         handleLogout();
       } else {
-        // Show error message but stay on page
-        setError('Failed to load data. Please refresh the page or check your connection.');
+        setError('Failed to load documents. Please refresh the page.');
       }
     } finally {
       setLoading(false);
@@ -93,7 +82,9 @@ const Dashboard = ({ user, onLogout }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     
-    if (onLogout) onLogout();
+    if (onLogout && typeof onLogout === 'function') {
+      onLogout();
+    }
     
     // Redirect to login page (Authentication Module)
     window.location.href = 'http://localhost:5173/candidate/login';
@@ -150,32 +141,10 @@ const Dashboard = ({ user, onLogout }) => {
     },
   ];
 
-  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-red-50 text-red-600 p-6 rounded-lg max-w-md text-center">
-          <i className="fas fa-exclamation-circle text-3xl mb-4"></i>
-          <p className="font-semibold">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-          >
-            Refresh Page
-          </button>
-        </div>
+      <div className="loading-container">
+        <i className="fas fa-spinner fa-spin"></i> Loading dashboard...
       </div>
     );
   }
