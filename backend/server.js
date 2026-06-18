@@ -15,8 +15,11 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => {
   console.log('✅ Connected to bgv_system database');
 })
-.catch(err => console.log('❌ MongoDB error:', err.message));
+.catch(err => {
+  console.log('❌ MongoDB error:', err.message);
+});
 
+// Routes
 app.use('/api/hr', require('./routes/hrRoutes'));
 
 app.get('/', (req, res) => {
