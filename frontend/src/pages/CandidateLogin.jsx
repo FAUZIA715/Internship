@@ -29,7 +29,7 @@ function CandidateLogin() {
           if (data.isFirstLogin) {
             navigate('/candidate/change-password');
           } else {
-            window.location.href = 'http://localhost:5173/dashboard'; // Sachi's Module 5.1
+            window.location.href = 'http://localhost:5174/dashboard'; // Sachi's Module 5.1
           }
         }, 1000);
       } else {
