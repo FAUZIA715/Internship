@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
@@ -5,9 +6,10 @@ import HRDashboard from './pages/HRDashboard.jsx';
 import UploadDocuments from './pages/UploadDocuments.jsx';
 import ViewDocuments from './pages/ViewDocuments.jsx';
 import UpdateDocument from './pages/UpdateDocument.jsx';
+import CandidateLogin from './pages/CandidateLogin.jsx';
+import HRLogin from './pages/HRLogin.jsx';
+import ChangePasswordPage from './pages/ChangePasswordPage.jsx';
 import './index.css';
-
-const AUTH_SERVER_URL = 'http://localhost:5173';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,9 +20,22 @@ function App() {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
 
+    console.log('🔍 App.jsx - Checking authentication...');
+    console.log('🔍 App.jsx - Token:', token ? token.substring(0, 20) + '...' : 'null');
+    console.log('🔍 App.jsx - UserData:', userData);
+
     if (token && userData) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
+      try {
+        const parsedUser = JSON.parse(userData);
+        console.log('✅ App.jsx - User authenticated:', parsedUser);
+        setIsAuthenticated(true);
+        setUser(parsedUser);
+      } catch (e) {
+        console.error('❌ App.jsx - Error parsing user data:', e);
+        localStorage.removeItem('user');
+      }
+    } else {
+      console.log('❌ App.jsx - No token or userData found');
     }
     setLoading(false);
   }, []);
@@ -31,14 +46,16 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('role');
-    window.location.href = `${AUTH_SERVER_URL}/candidate/login`;
+    window.location.href = '/candidate/login';
   };
 
+  // ✅ This function returns the correct dashboard component based on user role
   const getDashboardComponent = () => {
     if (user?.role === 'hr') return HRDashboard;
-    return Dashboard;
+    return Dashboard;  // ✅ Always return Dashboard for candidates
   };
 
+  // ✅ Get the correct dashboard component
   const DashboardComponent = getDashboardComponent();
 
   if (loading) {
@@ -52,43 +69,46 @@ function App() {
     );
   }
 
-  // Helper — redirect to auth server if not authenticated
-  const requireAuth = (component, role = null) => {
+  // ✅ Auth wrapper function - FIXED: Properly returns the component
+  const requireAuth = (Component, role = null) => {
     if (!isAuthenticated) {
-      window.location.href = `${AUTH_SERVER_URL}/candidate/login`;
-      return null;
+      const loginPath = role === 'hr' ? '/hr/login' : '/candidate/login';
+      return <Navigate to={loginPath} replace />;
     }
     if (role && user?.role !== role) {
-      window.location.href = role === 'hr'
-        ? `${AUTH_SERVER_URL}/hr/login`
-        : `${AUTH_SERVER_URL}/candidate/login`;
-      return null;
+      const loginPath = role === 'hr' ? '/hr/login' : '/candidate/login';
+      return <Navigate to={loginPath} replace />;
     }
-    return component;
+    // ✅ Return the component properly
+    return Component;
   };
 
   return (
     <Router>
       <div className="app-container">
         <Routes>
+          {/* Login Routes */}
+          <Route path="/candidate/login" element={<CandidateLogin />} />
+          <Route path="/hr/login" element={<HRLogin />} />
 
-          {/* Default redirect based on role */}
+          {/* Change Password Routes */}
+          <Route path="/candidate/change-password" element={<ChangePasswordPage />} />
+          <Route path="/hr/change-password" element={<ChangePasswordPage />} />
+
+          {/* Default redirect */}
           <Route
             path="/"
             element={
               isAuthenticated
                 ? <Navigate to={user?.role === 'hr' ? '/hr/dashboard' : '/candidate/dashboard'} />
-                : (() => {
-                    window.location.href = `${AUTH_SERVER_URL}/candidate/login`;
-                    return null;
-                  })()
+                : <Navigate to="/candidate/login" />
             }
           />
 
-          {/* Candidate Routes (Module 5.1 — Sachi) */}
+          {/* ✅ Candidate Routes - Fixed */}
           <Route
             path="/candidate/dashboard"
-            element={requireAuth(<DashboardComponent user={user} onLogout={handleLogout} />)}
+            element={requireAuth(<DashboardComponent user={user} onLogout={handleLogout} />, 'candidate')}
           />
           <Route
             path="/upload"
@@ -96,23 +116,34 @@ function App() {
           />
           <Route
             path="/documents"
-            element={requireAuth(<ViewDocuments user={user} onLogout={handleLogout} />)}
+            element={requireAuth(<ViewDocuments user={user} onLogout={handleLogout} />, 'candidate')}
           />
           <Route
             path="/verification-status"
-            element={requireAuth(<UpdateDocument user={user} onLogout={handleLogout} />)}
+            element={requireAuth(<UpdateDocument user={user} onLogout={handleLogout} />, 'candidate')}
           />
           <Route
             path="/update/:documentId"
             element={requireAuth(<UpdateDocument user={user} />, 'candidate')}
           />
 
-          {/* HR Routes (Module 5.2 — Juhi) */}
+          {/* HR Routes */}
           <Route
             path="/hr/dashboard"
             element={requireAuth(<HRDashboard user={user} onLogout={handleLogout} />, 'hr')}
           />
 
+          {/* Profile Route */}
+          <Route
+            path="/profile"
+            element={requireAuth(<div>Profile Page - Coming Soon</div>, 'candidate')}
+          />
+
+          {/* Catch all */}
+          <Route
+            path="*"
+            element={<Navigate to="/candidate/login" />}
+          />
         </Routes>
       </div>
     </Router>

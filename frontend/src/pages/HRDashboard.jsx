@@ -66,10 +66,10 @@ const HRDashboard = ({ user, onLogout }) => {
   };
 
   const handleLogout = () => {
-    logout();
-    onLogout();
-    navigate('/login');
-  };
+  logout();
+  if (onLogout) onLogout();
+  navigate('/hr/login'); // ✅ Fixed: navigate to HR login
+};
 
   const getStatusBadge = (status) => {
     const classes = {

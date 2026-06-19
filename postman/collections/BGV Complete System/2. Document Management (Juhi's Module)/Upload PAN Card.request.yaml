@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/documents/upload"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+body:
+  type: formdata
+  content:
+    - type: text
+      key: documentType
+      value: pan
+    - type: text
+      key: documentName
+      value: PAN Card
+    - type: file
+      key: document
+      src:
+        - ""
+order: 3000

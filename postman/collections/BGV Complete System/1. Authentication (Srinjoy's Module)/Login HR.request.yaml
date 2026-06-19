@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "hr@veriflow.com",
+      "password": "hr123",
+      "portalRole": "hr"
+    }
+order: 4000

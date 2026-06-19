@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "HR Manager",
+      "email": "hr@veriflow.com",
+      "password": "hr123",
+      "role": "hr"
+    }
+order: 2000

@@ -1,5 +1,3 @@
-
-
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // ============ TOKEN MANAGEMENT ============
@@ -40,7 +38,9 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-// Login - calls Srinjoy's API
+// ============ AUTH APIs (Srinjoy's Module) ============
+
+// Login
 export const login = async (email, password, portalRole) => {
   const data = await apiRequest('/auth/login', {
     method: 'POST',
@@ -54,7 +54,7 @@ export const login = async (email, password, portalRole) => {
   return data;
 };
 
-// Change Password - calls Srinjoy's API
+// Change Password
 export const changePassword = async (oldPassword, newPassword) => {
   return await apiRequest('/auth/change-password', {
     method: 'PUT',
@@ -62,12 +62,12 @@ export const changePassword = async (oldPassword, newPassword) => {
   });
 };
 
-// Get Profile - calls Srinjoy's API
+// Get Profile
 export const getProfile = async () => {
   return await apiRequest('/auth/profile');
 };
 
-// Forgot Password - calls Srinjoy's API
+// Forgot Password
 export const forgotPassword = async (email) => {
   return await apiRequest('/auth/forgot-password', {
     method: 'POST',
@@ -75,22 +75,23 @@ export const forgotPassword = async (email) => {
   });
 };
 
-// Reset Password - calls Srinjoy's API
+// Reset Password
 export const resetPassword = async (token, newPassword) => {
   return await apiRequest(`/auth/reset-password/${token}`, {
     method: 'POST',
     body: JSON.stringify({ newPassword })
   });
 };
-//logout
+
+// Logout
 export const logout = () => {
   removeToken();
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user');
-  };
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('user');
+};
 
-// ============ YOUR DOCUMENT MODULE APIs ============
+// ============ DOCUMENT MODULE APIs ============
 
 // Upload document
 export const uploadDocument = async (file, documentType, documentName) => {
@@ -176,6 +177,7 @@ export const getDocumentHistory = async (candidateId) => {
   return await apiRequest(`/history/${candidateId}`);
 };
 
+// ============ DEFAULT EXPORT ============
 export default {
   login,
   changePassword,
