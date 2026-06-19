@@ -69,7 +69,7 @@ const UploadDocuments = ({ user, onLogout }) => {
 
   const goToDashboard = () => navigate('/candidate/dashboard');
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/change-password');
+  const goToResetPassword = () => navigate('/candidate/reset-password');
 
   const handleFileChange = (docType, file) => {
     if (!file) return;

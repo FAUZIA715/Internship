@@ -95,7 +95,7 @@ const UpdateDocument = ({ user, onLogout }) => {
   };
 
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/change-password');
+  const goToResetPassword = () => navigate('/candidate/creset-password');
 
   // ============ PORTAL REDIRECT FUNCTIONS ============
   

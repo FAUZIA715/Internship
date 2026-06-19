@@ -47,7 +47,7 @@ const ViewDocuments = ({ user, onLogout }) => {
 
   const goToDashboard = () => navigate('/candidate/dashboard');
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/change-password');
+  const goToResetPassword = () => navigate('/candidate/reset-password');
 
   // View document - Use _id for API calls
   const viewDocument = async (doc) => {
