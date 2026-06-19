@@ -92,6 +92,7 @@ router.put('/candidates/:id/update-document/:docType', async (req, res) => {
     const { id, docType } = req.params;
     const { status } = req.body;
 
+    // Check if document type is valid
     const allowedTypes = ['aadhaar', 'pan', 'degree', 'employment'];
     if (!allowedTypes.includes(docType)) {
       return res.status(400).json({
@@ -100,8 +101,12 @@ router.put('/candidates/:id/update-document/:docType', async (req, res) => {
       });
     }
 
-    const doc = await Document.findOne({ candidateId: id, documentType: docType });
-
+    // Find the document
+    const doc = await Document.findOne({ 
+      candidateId: id, 
+      documentType: docType 
+    });
+    
     if (!doc) {
       return res.status(404).json({ 
         success: false, 
@@ -109,30 +114,46 @@ router.put('/candidates/:id/update-document/:docType', async (req, res) => {
       });
     }
 
-    doc.status = status;
+    // Prepare update data
+    let updateData = {
+      status: status,
+      verifiedBy: 'HR'
+    };
+
     if (status === 'verified') {
-      doc.verifiedAt = new Date();
+      updateData.verifiedAt = new Date();
+      updateData.rejectionReason = null;
     } else if (status === 'rejected') {
-      doc.rejectionReason = `${docType} rejected by HR`;
-      doc.verifiedAt = null;
+      updateData.status = 'rejected';
+      updateData.verifiedAt = null;
+      updateData.rejectionReason = `${docType} rejected by HR`;
     } else {
-      doc.status = 'pending';
-      doc.verifiedAt = null;
+      updateData.status = 'pending';
+      updateData.verifiedAt = null;
+      updateData.rejectionReason = null;
     }
 
-    await doc.save();
+    // ✅ FIX: Use updateOne instead of save()
+    await Document.updateOne(
+      { _id: doc._id },
+      { $set: updateData }
+    );
+
+    console.log(`✅ ${docType} updated to ${status} for candidate ${id}`);
 
     res.json({
       success: true,
-      message: `${docType} status updated to ${status}`,
-      document: doc
+      message: `${docType} status updated to ${status}`
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('❌ Error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
   }
 });
-
 // ─── VIEW DOCUMENT ──────────────────────────────────────────────────
 router.get('/view-document/:documentId', async (req, res) => {
   try {

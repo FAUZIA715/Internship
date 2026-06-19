@@ -82,9 +82,9 @@ const CandidateDetails = () => {
       alert('❌ Candidate data not loaded');
       return;
     }
-    debugger;
+    //debugger;
     const doc = candidate.documents?.[docType];
-    console.log('📄 Document found:', doc);
+    //console.log('📄 Document found:', doc);
     
     if (!doc) {
       alert(`❌ ${docType} document not uploaded`);
@@ -97,7 +97,7 @@ const CandidateDetails = () => {
     }
 
     const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
-    console.log('🔗 Opening:', docUrl);
+    //console.log('🔗 Opening:', docUrl);
     window.open(docUrl, '_blank');
   };
 //6a3275758a0bef34ec8ee4ba

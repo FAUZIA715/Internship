@@ -53,11 +53,20 @@ const CandidatesList = () => {
 
   const getVerificationStatus = (candidate) => {
     const allAutoVerified = 
-      candidate.autoVerification?.aadhaar === 'Verified' &&
-      candidate.autoVerification?.pan === 'Verified' &&
-      candidate.autoVerification?.address === 'Verified';
-    
+      candidate.documents?.aadhaar?.status === 'verified' &&
+      candidate.documents?.pan?.status === 'verified' &&
+      candidate.documents?.degree?.status === 'verified' &&
+      candidate.documents?.employment?.status === 'verified';
+
+    const anyRejected = 
+      candidate.documents?.aadhaar?.status === 'rejected' ||
+      candidate.documents?.pan?.status === 'rejected' ||
+      candidate.documents?.degree?.status === 'rejected' ||
+      candidate.documents?.employment?.status === 'rejected';
+
+
     if (allAutoVerified) return <span className="status-completed">✅ Completed</span>;
+    else if (anyRejected) return <span className="status-rejected">❌ Rejected</span>;
     return <span className="status-progress">⏳ In Progress</span>;
   };
 
@@ -85,13 +94,13 @@ const CandidatesList = () => {
           📋 All ({candidates.length})
         </button>
         <button className={`filter-btn ${activeFilter === 'pending' ? 'active' : ''}`} onClick={() => { setActiveFilter('pending'); navigate('/candidates-list?filter=pending'); }}>
-          ⏳ Pending ({candidates.filter(c => c.hrReviewStatus === 'Pending').length})
+          ⏳ Pending ({candidates.filter(c => candidateIsPending(c)).length})
         </button>
         <button className={`filter-btn ${activeFilter === 'approved' ? 'active' : ''}`} onClick={() => { setActiveFilter('approved'); navigate('/candidates-list?filter=approved'); }}>
-          ✅ Approved ({candidates.filter(c => c.hrReviewStatus === 'Approved').length})
+          ✅ Approved ({candidates.filter(c => candidateIsApproved(c)).length})
         </button>
         <button className={`filter-btn ${activeFilter === 'rejected' ? 'active' : ''}`} onClick={() => { setActiveFilter('rejected'); navigate('/candidates-list?filter=rejected'); }}>
-          ❌ Rejected ({candidates.filter(c => c.hrReviewStatus === 'Rejected').length})
+          ❌ Rejected ({candidates.filter(c => candidateIsRejected(c)).length})
         </button>
       </div>
 
@@ -104,19 +113,17 @@ const CandidatesList = () => {
               <th>📞 Phone</th>
               <th>💼 Position</th>
               <th>📊 Verification Status</th>
-              <th>🏁 HR Status</th>
               <th>⚙️ Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredCandidates.map(c => (
               <tr key={c._id}>
-                <td><strong>👤 {c.fullName}</strong></td>
-                <td>📧 {c.email}</td>
-                <td>📞 {c.phone}</td>
-                <td>💼 {c.positionApplied}</td>
+                <td><strong>👤 {c.name}</strong></td>
+                <td> {c.email}</td>
+                <td> {c.phone||'N/A'}</td>
+                <td>{c.position}</td>
                 <td>{getVerificationStatus(c)}</td>
-                <td>{getHrStatusBadge(c.hrReviewStatus)}</td>
                 <td className="action-cell">
                   <button className="view-details-btn" onClick={() => navigate(`/candidate-details/${c._id}`)}>
                     👁️ View Details →
@@ -130,26 +137,58 @@ const CandidatesList = () => {
     </div>
   );
 };
-// ─── GET HR STATUS ────────────────────────────────────────────────
-const getHrStatus = (candidate) => {
-  const docs = [
-    candidate.aadhaarStatus,
-    candidate.panStatus,
-    candidate.addressStatus,
-    candidate.degreeStatus,
-    candidate.employmentStatus
-  ];
+// // ─── GET HR STATUS ────────────────────────────────────────────────
+// const getHrStatus = (candidate) => {
+//   const docs = [
+//     candidate.documents?.aadhaar?.status,
+//     candidate.documents?.pan?.status,
+//     //candidate.documents?.address?.status,
+//     candidate.documents?.degree?.status,
+//     candidate.documents?.employment?.status
+//   ];
   
-  if (docs.every(s => s === 'verified')) return 'Approved';
-  if (docs.some(s => s === 'rejected')) return 'Rejected';
-  return 'Pending';
-};
+//   if (docs.every(s => s === 'verified')) return 'Approved';
+//   if (docs.some(s => s === 'rejected')) return 'Rejected';
+//   return 'Pending';
+// };
 
 // ─── GET HR STATUS BADGE ─────────────────────────────────────────
-const getHrStatusBadge = (candidate) => {
-  const status = getHrStatus(candidate);
-  if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
-  if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
-  return <span className="status-pending">⏳ Pending</span>;
+// const getHrStatusBadge = (candidate) => {
+//   const status = getHrStatus(candidate);
+//   if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
+//   if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
+//   return <span className="status-pending">⏳ Pending</span>;
+// };
+const candidateIsApproved = (candidate) => {
+  const docs = [
+    candidate.documents?.aadhaar?.status,
+    candidate.documents?.pan?.status,
+    candidate.documents?.degree?.status,
+    candidate.documents?.employment?.status
+  ];
+  return docs.every(s => s === 'verified');
 };
+const candidateIsRejected = (candidate) => {
+  const docs = [
+    candidate.documents?.aadhaar?.status, 
+    candidate.documents?.pan?.status,
+    candidate.documents?.degree?.status,
+    candidate.documents?.employment?.status
+  ];
+  return docs.some(s => s === 'rejected');
+};
+const candidateIsPending = (candidate) => {
+  const docs = [
+    candidate.documents?.aadhaar?.status,
+    candidate.documents?.pan?.status,
+    candidate.documents?.degree?.status,
+    candidate.documents?.employment?.status
+  ];
+//debugger;
+if(docs.some(s => s === undefined)) return true; // If any document is rejected, candidate is not pending
+
+  return docs.some(s => s === 'pending');
+};  
+ 
+
 export default CandidatesList;
