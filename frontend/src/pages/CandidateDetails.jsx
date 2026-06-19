@@ -12,6 +12,7 @@ const CandidateDetails = () => {
   const [employmentStatus, setEmploymentStatus] = useState('');
   const [updatingDegree, setUpdatingDegree] = useState(false);
   const [updatingEmployment, setUpdatingEmployment] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     fetchCandidate();
@@ -26,7 +27,6 @@ const CandidateDetails = () => {
         }
       });
       const data = await response.json();
-      console.log('📥 Candidate data:', data);
       setCandidate(data);
       setDegreeStatus(data.degreeStatus || 'not_uploaded');
       setEmploymentStatus(data.employmentStatus || 'not_uploaded');
@@ -41,15 +41,11 @@ const CandidateDetails = () => {
     localStorage.setItem('refreshActivities', Date.now().toString());
   };
 
-  // ─── UPDATE DEGREE ──────────────────────────────────────────────
   const handleUpdateDegree = async () => {
     if (updatingDegree) return;
-    
     setUpdatingDegree(true);
     try {
       const token = localStorage.getItem('token');
-      console.log('🔄 Updating degree to:', degreeStatus);
-      
       const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-degree`, {
         method: 'PUT',
         headers: {
@@ -58,10 +54,7 @@ const CandidateDetails = () => {
         },
         body: JSON.stringify({ status: degreeStatus })
       });
-
       const data = await response.json();
-      console.log('📥 Response:', data);
-
       if (data.success) {
         setMessage(`✅ Degree status updated to ${degreeStatus}`);
         fetchCandidate();
@@ -70,7 +63,6 @@ const CandidateDetails = () => {
         setMessage(`❌ ${data.message}`);
       }
     } catch (error) {
-      console.error('❌ Error:', error);
       setMessage('❌ Failed to update degree');
     } finally {
       setUpdatingDegree(false);
@@ -78,15 +70,11 @@ const CandidateDetails = () => {
     }
   };
 
-  // ─── UPDATE EMPLOYMENT ──────────────────────────────────────────
   const handleUpdateEmployment = async () => {
     if (updatingEmployment) return;
-    
     setUpdatingEmployment(true);
     try {
       const token = localStorage.getItem('token');
-      console.log('🔄 Updating employment to:', employmentStatus);
-      
       const response = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-employment`, {
         method: 'PUT',
         headers: {
@@ -95,10 +83,7 @@ const CandidateDetails = () => {
         },
         body: JSON.stringify({ status: employmentStatus })
       });
-
       const data = await response.json();
-      console.log('📥 Response:', data);
-
       if (data.success) {
         setMessage(`✅ Employment status updated to ${employmentStatus}`);
         fetchCandidate();
@@ -107,7 +92,6 @@ const CandidateDetails = () => {
         setMessage(`❌ ${data.message}`);
       }
     } catch (error) {
-      console.error('❌ Error:', error);
       setMessage('❌ Failed to update employment');
     } finally {
       setUpdatingEmployment(false);
@@ -115,7 +99,83 @@ const CandidateDetails = () => {
     }
   };
 
-  // ─── GET BADGE ────────────────────────────────────────────────────
+  // ─── GENERATE BGV REPORT ──────────────────────────────────────────
+  const handleGenerateReport = async () => {
+    const allVerified = 
+      candidate?.aadhaarStatus === 'verified' &&
+      candidate?.panStatus === 'verified' &&
+      candidate?.addressStatus === 'verified' &&
+      candidate?.degreeStatus === 'verified' &&
+      candidate?.employmentStatus === 'verified';
+
+    if (!allVerified) {
+      setMessage('❌ All documents must be verified first.');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    setGenerating(true);
+    setMessage('⏳ Generating BGV Report...');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/reports/generate/${candidate._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMessage(`✅ Report generated! Decision: ${data.report.finalDecision}`);
+        setCandidate({
+          ...candidate,
+          reportGenerated: true,
+          reportId: data.report.id
+        });
+      } else {
+        setMessage(`❌ ${data.message}`);
+      }
+    } catch (error) {
+      setMessage('❌ Could not generate report.');
+    } finally {
+      setGenerating(false);
+      setTimeout(() => setMessage(''), 5000);
+    }
+  };
+
+  // ─── DOWNLOAD REPORT ──────────────────────────────────────────────
+  const handleDownloadReport = async () => {
+    if (!candidate?.reportId) {
+      setMessage('❌ No report available.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/reports/download/${candidate.reportId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BGV_Report_${candidate.name}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('✅ Download started!');
+    } catch (error) {
+      setMessage('❌ Download failed');
+    }
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   const getBadge = (status) => {
     if (status === 'verified') return <span className="badge verified">✅ Verified</span>;
     if (status === 'rejected') return <span className="badge rejected">❌ Rejected</span>;
@@ -123,10 +183,8 @@ const CandidateDetails = () => {
     return <span className="badge not-uploaded">📄 Not Uploaded</span>;
   };
 
-  // ─── CALCULATE HR STATUS ────────────────────────────────────────
   const getHrStatus = () => {
     if (!candidate) return 'Pending';
-    
     const docs = [
       candidate.aadhaarStatus,
       candidate.panStatus,
@@ -134,10 +192,8 @@ const CandidateDetails = () => {
       candidate.degreeStatus,
       candidate.employmentStatus
     ];
-    
     if (docs.every(s => s === 'verified')) return 'Approved';
     if (docs.some(s => s === 'rejected')) return 'Rejected';
-    if (docs.some(s => s === 'pending' || s === 'not_uploaded')) return 'Pending';
     return 'Pending';
   };
 
@@ -149,10 +205,7 @@ const CandidateDetails = () => {
   return (
     <div className="candidate-details-container">
       <div className="details-header">
-        {/* FIXED: Back button now navigates correctly */}
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          ← Back
-        </button>
+        <button className="back-btn" onClick={() => navigate(-1)}>← Back</button>
         <h1>{candidate.name}</h1>
       </div>
 
@@ -165,7 +218,6 @@ const CandidateDetails = () => {
             <h2>{candidate.name}</h2>
             <p>📧 {candidate.email}</p>
             <p>💼 Position: {candidate.position || 'N/A'}</p>
-            <p>👤 Role: {candidate.role}</p>
           </div>
         </div>
 
@@ -196,20 +248,12 @@ const CandidateDetails = () => {
               <div className="manual-title">🎓 Degree Certificate</div>
               <div className="manual-status">Current: {getBadge(candidate.degreeStatus)}</div>
               <div className="manual-controls">
-                <select 
-                  value={degreeStatus} 
-                  onChange={(e) => setDegreeStatus(e.target.value)} 
-                  className="status-select"
-                >
+                <select value={degreeStatus} onChange={(e) => setDegreeStatus(e.target.value)} className="status-select">
                   <option value="pending">Pending</option>
                   <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <button 
-                  className="btn-update" 
-                  onClick={handleUpdateDegree}
-                  disabled={updatingDegree}
-                >
+                <button className="btn-update" onClick={handleUpdateDegree} disabled={updatingDegree}>
                   {updatingDegree ? '⏳ Updating...' : 'Update'}
                 </button>
               </div>
@@ -219,20 +263,12 @@ const CandidateDetails = () => {
               <div className="manual-title">💼 Employment Proof</div>
               <div className="manual-status">Current: {getBadge(candidate.employmentStatus)}</div>
               <div className="manual-controls">
-                <select 
-                  value={employmentStatus} 
-                  onChange={(e) => setEmploymentStatus(e.target.value)} 
-                  className="status-select"
-                >
+                <select value={employmentStatus} onChange={(e) => setEmploymentStatus(e.target.value)} className="status-select">
                   <option value="pending">Pending</option>
                   <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <button 
-                  className="btn-update" 
-                  onClick={handleUpdateEmployment}
-                  disabled={updatingEmployment}
-                >
+                <button className="btn-update" onClick={handleUpdateEmployment} disabled={updatingEmployment}>
                   {updatingEmployment ? '⏳ Updating...' : 'Update'}
                 </button>
               </div>
@@ -240,12 +276,29 @@ const CandidateDetails = () => {
           </div>
         </div>
 
-        {/* ─── HR STATUS SECTION ──────────────────────────────────── */}
         <div className="hr-status-section">
           <span>⭐ HR Final Status:</span>
           <span className={`badge ${hrStatus === 'Approved' ? 'approved' : hrStatus === 'Rejected' ? 'rejected' : 'pending'}`}>
             {hrStatus === 'Approved' ? '✅ Approved' : hrStatus === 'Rejected' ? '❌ Rejected' : '⏳ Pending'}
           </span>
+        </div>
+
+        {/* ─── REPORT GENERATION BUTTONS ──────────────────────────── */}
+        <div className="action-buttons">
+          <button 
+            className="btn-generate" 
+            onClick={handleGenerateReport}
+            disabled={hrStatus !== 'Approved' || generating}
+          >
+            {generating ? '⏳ Generating...' : '📄 Generate BGV Report'}
+          </button>
+          <button 
+            className="btn-download" 
+            onClick={handleDownloadReport}
+            disabled={!candidate?.reportId}
+          >
+            ⬇️ Download Report
+          </button>
         </div>
       </div>
     </div>
