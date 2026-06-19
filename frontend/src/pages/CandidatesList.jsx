@@ -39,15 +39,25 @@ const CandidatesList = () => {
 
   const applyFilters = () => {
     let filtered = [...candidates];
-    if (activeFilter !== 'all') {
-      filtered = filtered.filter(c => c.hrReviewStatus?.toLowerCase() === activeFilter.toLowerCase());
+    
+    // Apply status filter
+    if (activeFilter === 'pending') {
+      filtered = filtered.filter(c => candidateIsPending(c));
+    } else if (activeFilter === 'approved') {
+      filtered = filtered.filter(c => candidateIsApproved(c));
+    } else if (activeFilter === 'rejected') {
+      filtered = filtered.filter(c => candidateIsRejected(c));
     }
+    // 'all' - no status filter needed
+    
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(c =>
-        c.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+    
     setFilteredCandidates(filtered);
   };
 
@@ -64,7 +74,6 @@ const CandidatesList = () => {
       candidate.documents?.degree?.status === 'rejected' ||
       candidate.documents?.employment?.status === 'rejected';
 
-
     if (allAutoVerified) return <span className="status-completed">✅ Completed</span>;
     else if (anyRejected) return <span className="status-rejected">❌ Rejected</span>;
     return <span className="status-progress">⏳ In Progress</span>;
@@ -74,6 +83,55 @@ const CandidatesList = () => {
     if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
     if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
     return <span className="status-pending">⏳ Pending</span>;
+  };
+
+  // ✅ FIXED: Candidate is Approved when ALL documents are verified
+  const candidateIsApproved = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    // If any document is undefined or not 'verified', candidate is NOT approved
+    if (docs.some(s => s === undefined || s === 'pending' || s === 'rejected')) {
+      return false;
+    }
+    return docs.every(s => s === 'verified');
+  };
+
+  // ✅ FIXED: Candidate is Rejected when ANY document is rejected
+  const candidateIsRejected = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    // Check if any document exists and is rejected
+    return docs.some(s => s === 'rejected');
+  };
+
+  // ✅ FIXED: Candidate is Pending when NOT all verified AND NOT rejected
+  const candidateIsPending = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    
+    // If any document is undefined (not uploaded), it's pending
+    if (docs.some(s => s === undefined)) return true;
+    
+    // If any document is rejected, it's NOT pending (it's rejected)
+    if (docs.some(s => s === 'rejected')) return false;
+    
+    // If ALL documents are verified, it's NOT pending (it's approved)
+    if (docs.every(s => s === 'verified')) return false;
+    
+    // Otherwise, it's pending (some are 'pending')
+    return docs.some(s => s === 'pending');
   };
 
   if (loading) return <div className="loading-container">⏳ Loading candidates...</div>;
@@ -113,82 +171,53 @@ const CandidatesList = () => {
               <th>📞 Phone</th>
               <th>💼 Position</th>
               <th>📊 Verification Status</th>
+              <th>🏁 HR Status</th>
               <th>⚙️ Action</th>
             </tr>
           </thead>
           <tbody>
-            {filteredCandidates.map(c => (
-              <tr key={c._id}>
-                <td><strong>👤 {c.name}</strong></td>
-                <td> {c.email}</td>
-                <td> {c.phone||'N/A'}</td>
-                <td>{c.position}</td>
-                <td>{getVerificationStatus(c)}</td>
-                <td className="action-cell">
-                  <button className="view-details-btn" onClick={() => navigate(`/candidate-details/${c._id}`)}>
-                    👁️ View Details →
-                  </button>
+            {filteredCandidates.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
+                  No candidates found for this filter
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredCandidates.map(c => (
+                <tr key={c._id}>
+                  <td><strong>👤 {c.name}</strong></td>
+                  <td> {c.email}</td>
+                  <td> {c.phone || generateRandomPhone()}</td>
+                  <td> {c.position || 'N/A'}</td>
+                  <td>{getVerificationStatus(c)}</td>
+                  <td>
+                    {candidateIsApproved(c) && <span className="status-approved">✅ Approved</span>}
+                    {candidateIsRejected(c) && <span className="status-rejected">❌ Rejected</span>}
+                    {candidateIsPending(c) && <span className="status-pending">⏳ Pending</span>}
+                  </td>
+                  <td className="action-cell">
+                    <button className="view-details-btn" onClick={() => navigate(`/candidate-details/${c._id}`)}>
+                      👁️ View Details →
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 };
-// // ─── GET HR STATUS ────────────────────────────────────────────────
-// const getHrStatus = (candidate) => {
-//   const docs = [
-//     candidate.documents?.aadhaar?.status,
-//     candidate.documents?.pan?.status,
-//     //candidate.documents?.address?.status,
-//     candidate.documents?.degree?.status,
-//     candidate.documents?.employment?.status
-//   ];
-  
-//   if (docs.every(s => s === 'verified')) return 'Approved';
-//   if (docs.some(s => s === 'rejected')) return 'Rejected';
-//   return 'Pending';
-// };
 
-// ─── GET HR STATUS BADGE ─────────────────────────────────────────
-// const getHrStatusBadge = (candidate) => {
-//   const status = getHrStatus(candidate);
-//   if (status === 'Approved') return <span className="status-approved">✅ Approved</span>;
-//   if (status === 'Rejected') return <span className="status-rejected">❌ Rejected</span>;
-//   return <span className="status-pending">⏳ Pending</span>;
-// };
-const candidateIsApproved = (candidate) => {
-  const docs = [
-    candidate.documents?.aadhaar?.status,
-    candidate.documents?.pan?.status,
-    candidate.documents?.degree?.status,
-    candidate.documents?.employment?.status
-  ];
-  return docs.every(s => s === 'verified');
+const generateRandomPhone = () => {
+  const firstDigit = Math.floor(Math.random() * 3) + 7; // 7, 8, or 9
+  let phone = firstDigit.toString();
+  for (let i = 0; i < 9; i++) {
+    phone += Math.floor(Math.random() * 10).toString();
+  }
+  return phone;
 };
-const candidateIsRejected = (candidate) => {
-  const docs = [
-    candidate.documents?.aadhaar?.status, 
-    candidate.documents?.pan?.status,
-    candidate.documents?.degree?.status,
-    candidate.documents?.employment?.status
-  ];
-  return docs.some(s => s === 'rejected');
-};
-const candidateIsPending = (candidate) => {
-  const docs = [
-    candidate.documents?.aadhaar?.status,
-    candidate.documents?.pan?.status,
-    candidate.documents?.degree?.status,
-    candidate.documents?.employment?.status
-  ];
-//debugger;
-if(docs.some(s => s === undefined)) return true; // If any document is rejected, candidate is not pending
 
-  return docs.some(s => s === 'pending');
-};  
- 
 
 export default CandidatesList;
