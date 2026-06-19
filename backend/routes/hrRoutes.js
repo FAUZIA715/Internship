@@ -17,7 +17,10 @@ router.get('/candidates', async (req, res) => {
           status: doc.status,
           documentName: doc.documentName,
           uploadDate: doc.uploadDate,
-          verifiedAt: doc.verifiedAt
+          verifiedAt: doc.verifiedAt,
+          filePath: doc.filePath,
+          fileName: doc.fileName,
+          documentId: doc.documentId
         };
       });
       
@@ -28,11 +31,10 @@ router.get('/candidates', async (req, res) => {
         role: candidate.role,
         position: candidate.position || 'N/A',
         documents: docsMap,
-        degreeStatus: docsMap.degree?.status || 'not_uploaded',
-        employmentStatus: docsMap.employment?.status || 'not_uploaded',
         aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
         panStatus: docsMap.pan?.status || 'not_uploaded',
-        addressStatus: docsMap.address?.status || 'not_uploaded'
+        degreeStatus: docsMap.degree?.status || 'not_uploaded',
+        employmentStatus: docsMap.employment?.status || 'not_uploaded'
       };
     }));
     
@@ -58,7 +60,10 @@ router.get('/candidates/:id', async (req, res) => {
         status: doc.status,
         documentName: doc.documentName,
         uploadDate: doc.uploadDate,
-        verifiedAt: doc.verifiedAt
+        verifiedAt: doc.verifiedAt,
+        filePath: doc.filePath,
+        fileName: doc.fileName,
+        documentId: doc.documentId
       };
     });
     
@@ -69,39 +74,44 @@ router.get('/candidates/:id', async (req, res) => {
       role: candidate.role,
       position: candidate.position || 'N/A',
       documents: docsMap,
-      degreeStatus: docsMap.degree?.status || 'not_uploaded',
-      employmentStatus: docsMap.employment?.status || 'not_uploaded',
       aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
       panStatus: docsMap.pan?.status || 'not_uploaded',
-      addressStatus: docsMap.address?.status || 'not_uploaded'
+      degreeStatus: docsMap.degree?.status || 'not_uploaded',
+      employmentStatus: docsMap.employment?.status || 'not_uploaded'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── UPDATE DEGREE STATUS ─────────────────────────────────────────
-router.put('/candidates/:id/update-degree', async (req, res) => {
+// ─── UPDATE DOCUMENT STATUS ───────────────────────────────────────
+router.put('/candidates/:id/update-document/:docType', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, docType } = req.params;
     const { status } = req.body;
 
-    // Find the degree document
-    const doc = await Document.findOne({ candidateId: id, documentType: 'degree' });
+    const allowedTypes = ['aadhaar', 'pan', 'degree', 'employment'];
+    if (!allowedTypes.includes(docType)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid document type. Allowed: ${allowedTypes.join(', ')}`
+      });
+    }
+
+    const doc = await Document.findOne({ candidateId: id, documentType: docType });
 
     if (!doc) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Degree document not found for this candidate' 
+        message: `${docType} document not found` 
       });
     }
 
-    // Update status
     doc.status = status;
     if (status === 'verified') {
       doc.verifiedAt = new Date();
     } else if (status === 'rejected') {
-      doc.rejectionReason = 'Degree rejected by HR';
+      doc.rejectionReason = `${docType} rejected by HR`;
       doc.verifiedAt = null;
     } else {
       doc.status = 'pending';
@@ -112,48 +122,7 @@ router.put('/candidates/:id/update-degree', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Degree status updated to ${status}`,
-      document: doc
-    });
-
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ─── UPDATE EMPLOYMENT STATUS ─────────────────────────────────────
-router.put('/candidates/:id/update-employment', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    // Find the employment document
-    const doc = await Document.findOne({ candidateId: id, documentType: 'employment' });
-
-    if (!doc) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Employment document not found for this candidate' 
-      });
-    }
-
-    // Update status
-    doc.status = status;
-    if (status === 'verified') {
-      doc.verifiedAt = new Date();
-    } else if (status === 'rejected') {
-      doc.rejectionReason = 'Employment rejected by HR';
-      doc.verifiedAt = null;
-    } else {
-      doc.status = 'pending';
-      doc.verifiedAt = null;
-    }
-
-    await doc.save();
-
-    res.json({
-      success: true,
-      message: `Employment status updated to ${status}`,
+      message: `${docType} status updated to ${status}`,
       document: doc
     });
 
