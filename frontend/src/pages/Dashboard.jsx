@@ -92,7 +92,7 @@ const Dashboard = ({ user, onLogout }) => {
 
   // Navigate to pages
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/change-password');
+  const goToResetPassword = () => navigate('/candidate/reset-password');
   const goToUpload = () => navigate('/upload');
   const goToDocuments = () => navigate('/documents');
   const goToVerificationStatus = () => navigate('/verification-status');
