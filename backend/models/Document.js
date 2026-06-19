@@ -8,12 +8,32 @@ const documentSchema = new mongoose.Schema({
   },
   documentType: {
     type: String,
-    enum: ['aadhaar', 'pan', 'degree', 'employment', 'address'],
+    enum: ['aadhaar', 'pan', 'degree', 'employment'],
     required: true
   },
   documentName: {
     type: String,
     required: true
+  },
+  filePath: {
+    type: String,
+    default: null
+  },
+  fileName: {
+    type: String,
+    default: null
+  },
+  fileData: {
+    type: Buffer,
+    default: null
+  },
+  mimeType: {
+    type: String,
+    default: 'application/pdf'
+  },
+  fileSize: {
+    type: Number,
+    default: 0
   },
   status: {
     type: String,
@@ -28,10 +48,21 @@ const documentSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  documentId: {
+    type: String,
+    unique: true
+  },
   uploadDate: {
     type: Date,
     default: Date.now
   }
 }, { timestamps: true });
+
+documentSchema.pre('save', function(next) {
+  if (!this.documentId) {
+    this.documentId = `DOC_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Document', documentSchema, 'documents');

@@ -540,3 +540,16 @@
   background: #9ca3af;
   cursor: not-allowed;
 }
+.view-doc-btn {
+  padding: 4px 12px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.view-doc-btn:hover {
+  opacity: 0.9;
+}

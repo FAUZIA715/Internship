@@ -2,22 +2,22 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Connect to shared database - bgv_system
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   dbName: 'bgv_system'
 })
-.then(() => {
-  console.log('✅ Connected to bgv_system database');
-})
-.catch(err => {
-  console.log('❌ MongoDB error:', err.message);
-});
+.then(() => console.log('✅ Connected to bgv_system'))
+.catch(err => console.log('❌ MongoDB error:', err.message));
 
 // Routes
 app.use('/api/hr', require('./routes/hrRoutes'));

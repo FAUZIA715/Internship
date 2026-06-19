@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Document = require('../models/Document');
+const path = require('path');
+const fs = require('fs');
 
 // ─── GET all candidates ───────────────────────────────────────────
 router.get('/candidates', async (req, res) => {
@@ -128,6 +130,51 @@ router.put('/candidates/:id/update-document/:docType', async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── VIEW DOCUMENT ──────────────────────────────────────────────────
+router.get('/view-document/:documentId', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+
+    // Find document in MongoDB
+    const doc = await Document.findOne({ documentId: documentId });
+
+    if (!doc) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Document not found in database' 
+      });
+    }
+
+    // Get file path
+    const filePath = doc.filePath;
+
+    if (!filePath) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'File path not found in database' 
+      });
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'File does not exist on server' 
+      });
+    }
+
+    // Send the file
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Error viewing document:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 

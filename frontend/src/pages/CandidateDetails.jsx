@@ -73,15 +73,28 @@ const CandidateDetails = () => {
   };
 
   // ─── VIEW DOCUMENT ──────────────────────────────────────────────
-  const handleViewDocument = (doc) => {
-    if (doc && doc.filePath) {
-      const docUrl = `http://localhost:5000${doc.filePath}`;
-      window.open(docUrl, '_blank');
-    } else {
-      setMessage('❌ Document file not available');
-      setTimeout(() => setMessage(''), 3000);
-    }
-  };
+const handleViewDocument = (docType) => {
+  if (!candidate) {
+    setMessage('❌ Candidate data not loaded');
+    return;
+  }
+
+  const doc = candidate.documents?.[docType];
+  
+  if (!doc) {
+    setMessage(`❌ ${docType} document not uploaded`);
+    return;
+  }
+
+  if (!doc.documentId) {
+    setMessage(`❌ Document ID not found`);
+    return;
+  }
+
+  // View document from MongoDB
+  const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
+  window.open(docUrl, '_blank');
+};
 
   // ─── GENERATE REPORT ─────────────────────────────────────────────
   const handleGenerateReport = async () => {
