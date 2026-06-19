@@ -29,6 +29,7 @@ const CandidateDetails = () => {
         }
       });
       const data = await response.json();
+      console.log('📥 Candidate data:', data);
       setCandidate(data);
       setAadhaarStatus(data.aadhaarStatus || 'not_uploaded');
       setPanStatus(data.panStatus || 'not_uploaded');
@@ -73,29 +74,33 @@ const CandidateDetails = () => {
   };
 
   // ─── VIEW DOCUMENT ──────────────────────────────────────────────
-const handleViewDocument = (docType) => {
-  if (!candidate) {
-    setMessage('❌ Candidate data not loaded');
-    return;
-  }
+  const handleViewDocument = (docType) => {
+    console.log('🔍 Viewing document:', docType);
+    
+    
+    if (!candidate) {
+      alert('❌ Candidate data not loaded');
+      return;
+    }
+    debugger;
+    const doc = candidate.documents?.[docType];
+    console.log('📄 Document found:', doc);
+    
+    if (!doc) {
+      alert(`❌ ${docType} document not uploaded`);
+      return;
+    }
 
-  const doc = candidate.documents?.[docType];
-  
-  if (!doc) {
-    setMessage(`❌ ${docType} document not uploaded`);
-    return;
-  }
+    if (!doc.documentId) {
+      alert(`❌ Document ID not found for ${docType}`);
+      return;
+    }
 
-  if (!doc.documentId) {
-    setMessage(`❌ Document ID not found`);
-    return;
-  }
-
-  // View document from MongoDB
-  const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
-  window.open(docUrl, '_blank');
-};
-
+    const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
+    console.log('🔗 Opening:', docUrl);
+    window.open(docUrl, '_blank');
+  };
+//6a3275758a0bef34ec8ee4ba
   // ─── GENERATE REPORT ─────────────────────────────────────────────
   const handleGenerateReport = async () => {
     const allVerified = 
@@ -105,8 +110,7 @@ const handleViewDocument = (docType) => {
       employmentStatus === 'verified';
 
     if (!allVerified) {
-      setMessage('❌ All documents must be verified first.');
-      setTimeout(() => setMessage(''), 3000);
+      alert('❌ All documents must be verified first.');
       return;
     }
 
@@ -217,6 +221,7 @@ const handleViewDocument = (docType) => {
           <h3>📄 Document Verification</h3>
           <div className="docs-grid">
             
+            {/* Aadhaar */}
             <div className="doc-card">
               <div className="doc-title">🆔 Aadhaar Card</div>
               <div className="doc-status">Status: {getBadge(aadhaarStatus)}</div>
@@ -229,14 +234,20 @@ const handleViewDocument = (docType) => {
                 <button onClick={() => handleUpdateDocument('aadhaar', aadhaarStatus, setAadhaarStatus)} disabled={updating}>
                   Update
                 </button>
+                {/* ─── VIEW BUTTON ─── */}
+<button 
+  className="view-doc-btn" 
+  onClick={() => {
+    console.log('Button clicked for aadhaar');
+    handleViewDocument('aadhaar');
+  }}
+>
+  👁️ View
+</button>
               </div>
-              {candidate.documents?.aadhaar && (
-                <button className="view-doc-btn" onClick={() => handleViewDocument(candidate.documents.aadhaar)}>
-                  👁️ View
-                </button>
-              )}
             </div>
 
+            {/* PAN */}
             <div className="doc-card">
               <div className="doc-title">💳 PAN Card</div>
               <div className="doc-status">Status: {getBadge(panStatus)}</div>
@@ -249,14 +260,20 @@ const handleViewDocument = (docType) => {
                 <button onClick={() => handleUpdateDocument('pan', panStatus, setPanStatus)} disabled={updating}>
                   Update
                 </button>
+                {/* ─── VIEW BUTTON ─── */}
+<button 
+  className="view-doc-btn" 
+  onClick={() => {
+    console.log('Button clicked for pan');
+    handleViewDocument('pan');
+  }}
+>
+  👁️ View
+</button>
               </div>
-              {candidate.documents?.pan && (
-                <button className="view-doc-btn" onClick={() => handleViewDocument(candidate.documents.pan)}>
-                  👁️ View
-                </button>
-              )}
             </div>
 
+            {/* Degree */}
             <div className="doc-card">
               <div className="doc-title">🎓 Degree Certificate</div>
               <div className="doc-status">Status: {getBadge(degreeStatus)}</div>
@@ -269,14 +286,20 @@ const handleViewDocument = (docType) => {
                 <button onClick={() => handleUpdateDocument('degree', degreeStatus, setDegreeStatus)} disabled={updating}>
                   Update
                 </button>
-              </div>
-              {candidate.documents?.degree && (
-                <button className="view-doc-btn" onClick={() => handleViewDocument(candidate.documents.degree)}>
+                {/* ─── VIEW BUTTON ─── */}
+                <button 
+                  className="view-doc-btn" 
+                  onClick={() => {
+                    console.log('Button clicked for degree');
+                    handleViewDocument('degree');
+                  }}
+                >
                   👁️ View
                 </button>
-              )}
+              </div>
             </div>
 
+            {/* Employment */}
             <div className="doc-card">
               <div className="doc-title">💼 Employment Proof</div>
               <div className="doc-status">Status: {getBadge(employmentStatus)}</div>
@@ -289,12 +312,17 @@ const handleViewDocument = (docType) => {
                 <button onClick={() => handleUpdateDocument('employment', employmentStatus, setEmploymentStatus)} disabled={updating}>
                   Update
                 </button>
-              </div>
-              {candidate.documents?.employment && (
-                <button className="view-doc-btn" onClick={() => handleViewDocument(candidate.documents.employment)}>
+                {/* ─── VIEW BUTTON ─── */}
+                <button 
+                  className="view-doc-btn" 
+                  onClick={() => {
+                    console.log('Button clicked for employment');
+                    handleViewDocument('employment');
+                  }}
+                >
                   👁️ View
                 </button>
-              )}
+              </div>
             </div>
 
           </div>

@@ -21,6 +21,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // Routes
 app.use('/api/hr', require('./routes/hrRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'VeriFlow API running' });

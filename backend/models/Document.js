@@ -1,3 +1,4 @@
+const { application } = require('express');
 const mongoose = require('mongoose');
 
 const documentSchema = new mongoose.Schema({
@@ -29,6 +30,7 @@ const documentSchema = new mongoose.Schema({
   },
   mimeType: {
     type: String,
+    enum: ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'],
     default: 'application/pdf'
   },
   fileSize: {
