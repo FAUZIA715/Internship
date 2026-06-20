@@ -26,8 +26,7 @@ const getDocLabel = (type) => {
     aadhaar: 'Aadhaar Card',
     pan: 'PAN Card',
     degree: 'Degree Certificate',
-    employment: 'Employment Proof',
-    address: 'Address Proof'
+    employment: 'Employment Proof'
   };
   return labels[type] || type;
 };
@@ -54,7 +53,7 @@ const getStatusBadge = (status) => {
 
 // ─── Generate PDF from HTML ───────────────────────────────────────
 const generatePDF = async (reportData) => {
-  const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
+  const docTypes = ['aadhaar', 'pan', 'degree', 'employment'];
   const decision = reportData.finalDecision;
 
   const decisionColors = {
@@ -185,7 +184,7 @@ exports.generateReport = async (req, res) => {
       documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
     }
 
-    const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
+    const docTypes = ['aadhaar', 'pan', 'degree', 'employment'];
     const mappedDocs = docTypes.map(type => {
       const doc = documents.find(d => d.documentType === type);
       return {
@@ -196,9 +195,7 @@ exports.generateReport = async (req, res) => {
       };
     });
 
-    // ─── Verification Complete Check (Fauzia's requirement) ───────
-    // Report can only be generated after ALL documents have been
-    // processed — no document can be pending or not uploaded
+    // ─── Verification Complete Check ──────────────────────────────
     const unprocessed = mappedDocs.filter(
       d => d.status === 'pending' || d.status === 'not_uploaded'
     );

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { api } from '../utils/api';
 
-// Password strength validator — same rules as backend
 const validatePassword = (password) => {
   const errors = [];
   if (password.length < 8) errors.push('At least 8 characters');
@@ -14,7 +13,6 @@ const validatePassword = (password) => {
 };
 
 function ChangePasswordPage() {
-  const navigate = useNavigate();
   const { portalRole } = useParams();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -66,12 +64,14 @@ function ChangePasswordPage() {
       const data = await api.changePassword({ oldPassword, newPassword });
       if (data.success) {
         setSuccess('Password updated successfully! Redirecting...');
-        setTimeout(() => navigate(`/${portalRole}/dashboard`), 1500);
+        setTimeout(() => {
+          window.location.href = `/${portalRole}/dashboard`;
+        }, 1500);
       } else {
         setError(data.message);
       }
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,6 @@ function ChangePasswordPage() {
     }}>
       <div style={{ width: '100%', maxWidth: '440px' }}>
 
-        {/* Badge */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -100,8 +99,6 @@ function ChangePasswordPage() {
         </div>
 
         <div style={{ background: 'white', borderRadius: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', padding: '2rem' }}>
-
-          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div style={{
               width: '64px', height: '64px', background: gradient, borderRadius: '16px',
@@ -117,7 +114,6 @@ function ChangePasswordPage() {
             </p>
           </div>
 
-          {/* Warning */}
           <div style={{
             background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px',
             padding: '10px 14px', marginBottom: '20px', fontSize: '12px', color: '#92400e',
@@ -129,7 +125,6 @@ function ChangePasswordPage() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-            {/* Current Password */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
                 Current Password
@@ -144,7 +139,6 @@ function ChangePasswordPage() {
               />
             </div>
 
-            {/* New Password */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
                 New Password
@@ -158,7 +152,6 @@ function ChangePasswordPage() {
                 onBlur={e => e.target.style.borderColor = '#d1d5db'}
               />
 
-              {/* Strength Bar */}
               {newPassword && (
                 <div style={{ marginTop: '8px' }}>
                   <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
@@ -170,13 +163,10 @@ function ChangePasswordPage() {
                       }}></div>
                     ))}
                   </div>
-                  <p style={{ fontSize: '11px', color: strengthColor(), fontWeight: 600 }}>
-                    {strengthLabel()}
-                  </p>
+                  <p style={{ fontSize: '11px', color: strengthColor(), fontWeight: 600 }}>{strengthLabel()}</p>
                 </div>
               )}
 
-              {/* Requirements checklist */}
               {newPassword && (
                 <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {[
@@ -196,7 +186,6 @@ function ChangePasswordPage() {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
                 Confirm New Password
@@ -223,7 +212,6 @@ function ChangePasswordPage() {
               )}
             </div>
 
-            {/* Error */}
             {error && (
               <div style={{
                 padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
@@ -234,7 +222,6 @@ function ChangePasswordPage() {
               </div>
             )}
 
-            {/* Success */}
             {success && (
               <div style={{
                 padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
@@ -245,7 +232,6 @@ function ChangePasswordPage() {
               </div>
             )}
 
-            {/* Submit */}
             <button type="submit" disabled={loading} style={{
               width: '100%', padding: '11px',
               background: loading ? '#9ca3af' : gradient,
