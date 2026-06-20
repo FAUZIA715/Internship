@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const Document = require('../models/Document');
+const Document = require('../models/document');
+const Report = require('../models/report');
 const path = require('path');
 const fs = require('fs');
 
+const { protect, authorize } = require('../middleware/authMiddleware');
+
 // ─── GET all candidates ───────────────────────────────────────────
-router.get('/candidates', async (req, res) => {
+router.get('/candidates', protect, authorize('hr'), async (req, res) => {
   try {
     const candidates = await User.find({ role: 'candidate' }).sort({ createdAt: -1 });
-    
     const candidatesWithDocs = await Promise.all(candidates.map(async (candidate) => {
       const documents = await Document.find({ candidateId: candidate._id });
-      
+         // const report = await Report.findOne({ candidateId: candidate._id });
       const docsMap = {};
       documents.forEach(doc => {
         docsMap[doc.documentType] = {
@@ -36,7 +38,7 @@ router.get('/candidates', async (req, res) => {
         aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
         panStatus: docsMap.pan?.status || 'not_uploaded',
         degreeStatus: docsMap.degree?.status || 'not_uploaded',
-        employmentStatus: docsMap.employment?.status || 'not_uploaded'
+        employmentStatus: docsMap.employment?.status || 'not_uploaded',
       };
     }));
     
@@ -47,7 +49,7 @@ router.get('/candidates', async (req, res) => {
 });
 
 // ─── GET single candidate ─────────────────────────────────────────
-router.get('/candidates/:id', async (req, res) => {
+router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
   try {
     const candidate = await User.findOne({ _id: req.params.id, role: 'candidate' });
     if (!candidate) {
@@ -87,7 +89,7 @@ router.get('/candidates/:id', async (req, res) => {
 });
 
 // ─── UPDATE DOCUMENT STATUS ───────────────────────────────────────
-router.put('/candidates/:id/update-document/:docType', async (req, res) => {
+router.put('/candidates/:id/update-document/:docType', protect, authorize('hr'), async (req, res) => {
   try {
     const { id, docType } = req.params;
     const { status } = req.body;
@@ -155,7 +157,7 @@ router.put('/candidates/:id/update-document/:docType', async (req, res) => {
   }
 });
 // ─── VIEW DOCUMENT ──────────────────────────────────────────────────
-router.get('/view-document/:documentId', async (req, res) => {
+router.get('/view-document/:documentId', protect, async (req, res) => {
   try {
     const { documentId } = req.params;
 

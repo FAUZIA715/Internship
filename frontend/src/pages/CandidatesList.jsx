@@ -17,21 +17,19 @@ const CandidatesList = () => {
     if (filter) setActiveFilter(filter);
   }, [location.search]);
 
-  useEffect(() => {
-    fetchCandidates();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [candidates, searchTerm, activeFilter]);
+  useEffect(() => { fetchCandidates(); }, []);
+  useEffect(() => { applyFilters(); }, [candidates, searchTerm, activeFilter]);
 
   const fetchCandidates = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/hr/candidates');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/hr/candidates', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
-      setCandidates(data);
+      setCandidates(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error:', err);
+      setCandidates([]);
     } finally {
       setLoading(false);
     }

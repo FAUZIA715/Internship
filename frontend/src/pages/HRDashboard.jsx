@@ -17,7 +17,10 @@ const HRDashboard = ({ user, onLogout }) => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/hr/candidates');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/hr/candidates', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
       setCandidates(data);
       

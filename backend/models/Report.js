@@ -22,7 +22,7 @@ const ReportSchema = new mongoose.Schema({
     {
       documentType: {
         type: String,
-        enum: ['aadhaar', 'pan', 'degree', 'employment', 'address']
+        enum: ['aadhaar', 'pan', 'degree', 'employment'] // address removed
       },
       status: {
         type: String,
