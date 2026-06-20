@@ -1,11 +1,7 @@
+const { application } = require('express');
 const mongoose = require('mongoose');
 
-const DocumentSchema = new mongoose.Schema({
-  documentId: {
-    type: String,
-    unique: true,
-    default: () => 'DOC_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-  },
+const documentSchema = new mongoose.Schema({
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -13,8 +9,8 @@ const DocumentSchema = new mongoose.Schema({
   },
   documentType: {
     type: String,
-    required: true,
-    enum: ['aadhaar', 'pan', 'degree', 'employment', 'address']
+    enum: ['aadhaar', 'pan', 'degree', 'employment'],
+    required: true
   },
   documentName: {
     type: String,
@@ -22,59 +18,53 @@ const DocumentSchema = new mongoose.Schema({
   },
   filePath: {
     type: String,
-    required: true
+    default: null
   },
   fileName: {
     type: String,
-    required: true
+    default: null
   },
-  fileSize: {
-    type: Number,
-    required: true
+  fileData: {
+    type: Buffer,
+    default: null
   },
   mimeType: {
     type: String,
-    required: true
+    enum: ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'],
+    default: 'application/pdf'
   },
-  uploadDate: {
-    type: Date,
-    default: Date.now
+  fileSize: {
+    type: Number,
+    default: 0
   },
   status: {
     type: String,
-    enum: ['pending', 'verified', 'rejected'],
+    enum: ['pending', 'verified', 'rejected', 'not_uploaded'],
     default: 'pending'
-  },
-  // NEW: Portal verification status (for Aadhaar/PAN)
-  portalVerified: {
-    type: Boolean,
-    default: false
-  },
-  portalVerifiedAt: {
-    type: Date,
-    default: null
-  },
-  portalNumber: {
-    type: String,
-    default: null
   },
   rejectionReason: {
     type: String,
     default: null
   },
-  verifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
   verifiedAt: {
     type: Date,
     default: null
+  },
+  documentId: {
+    type: String,
+    unique: true
+  },
+  uploadDate: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
+}, { timestamps: true });
+
+documentSchema.pre('save', function(next) {
+  if (!this.documentId) {
+    this.documentId = `DOC_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  }
+  next();
 });
 
-DocumentSchema.index({ candidateId: 1, documentType: 1 });
-
-module.exports = mongoose.models.Document || mongoose.model('Document', DocumentSchema);
+module.exports = mongoose.model('Document', documentSchema, 'documents');
