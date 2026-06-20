@@ -1,10 +1,17 @@
+// models/Document.js
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const DocumentSchema = new mongoose.Schema({
   documentId: {
     type: String,
     unique: true,
-    default: () => 'DOC_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    default: () => {
+      // ✅ Better unique ID generation
+      const timestamp = Date.now().toString(36);
+      const random = crypto.randomBytes(6).toString('hex');
+      return `DOC_${timestamp}_${random}`;
+    }
   },
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,

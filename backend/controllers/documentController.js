@@ -22,23 +22,62 @@ exports.uploadDocument = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a file' });
     }
 
-    const existingDoc = await Document.findOne({ candidateId, documentType });
+    // ✅ Check for existing document more carefully
+    const existingDoc = await Document.findOne({ 
+      candidateId, 
+      documentType 
+    });
+    
     if (existingDoc) {
-      if (fs.existsSync(existingDoc.filePath)) fs.unlinkSync(existingDoc.filePath);
-      await Document.deleteOne({ _id: existingDoc._id });
+      // ✅ Delete the old file
+      if (fs.existsSync(existingDoc.filePath)) {
+        fs.unlinkSync(existingDoc.filePath);
+      }
+      
+      // ✅ Update the existing document instead of delete + create
+      existingDoc.filePath = req.file.path;
+      existingDoc.fileName = req.file.filename;
+      existingDoc.fileSize = req.file.size;
+      existingDoc.mimeType = req.file.mimetype;
+      existingDoc.status = 'pending';
+      existingDoc.rejectionReason = null;
+      existingDoc.verifiedBy = null;
+      existingDoc.verifiedAt = null;
+      existingDoc.uploadDate = new Date();
+      
+      await existingDoc.save();
+      
+      await logHistory({
+        candidateId,
+        documentId: existingDoc._id,
+        documentType,
+        documentName,
+        action: 'UPDATED',
+        status: 'pending',
+        performedBy: req.user.id,
+        performedByRole: req.user.role,
+        performedByName: req.user.name,
+        details: `File updated: ${req.file.filename}`,
+        req
+      });
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Document updated successfully', 
+        document: existingDoc 
+      });
     }
 
     const document = await Document.create({
-      candidateId,
-      documentType,
-      documentName,
-      filePath: req.file.path,
-      fileName: req.file.filename,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-      status: 'pending'
-    });
-
+  candidateId,
+  documentType,
+  documentName: req.body.documentName,
+  filePath: req.file.path,
+  fileName: req.file.filename,
+  fileSize: req.file.size,
+  mimeType: req.file.mimetype,
+  status: 'pending'
+});
     await logHistory({
       candidateId,
       documentId: document._id,
@@ -56,6 +95,7 @@ exports.uploadDocument = async (req, res) => {
     res.status(201).json({ success: true, message: 'Document uploaded successfully', document });
   } catch (err) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    console.error('Upload error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

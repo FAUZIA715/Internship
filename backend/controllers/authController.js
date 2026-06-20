@@ -34,18 +34,51 @@ exports.login = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword) return res.status(400).json({ success: false, message: 'Please provide old and new password' });
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide old and new password' });
+    }
+    
     const passwordError = validatePassword(newPassword);
-    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
+    }
+    
     const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+    }
+    
+    // ✅ Hash new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
+    
+    // ✅ IMPORTANT: Set isFirstLogin to false
     user.isFirstLogin = false;
+    
     await user.save();
-    res.status(200).json({ success: true, message: 'Password updated successfully' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+    
+    console.log(`✅ Password changed for ${user.email}, isFirstLogin set to false`);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Password updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isFirstLogin: user.isFirstLogin  // ✅ Send updated status
+      }
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 exports.getProfile = async (req, res) => {

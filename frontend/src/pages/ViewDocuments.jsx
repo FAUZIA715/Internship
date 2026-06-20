@@ -51,7 +51,7 @@ const ViewDocuments = ({ user, onLogout }) => {
 
   // View document - Use _id for API calls
   const viewDocument = async (doc) => {
-    const docId = doc._id;
+    const docId = doc.documentId;
     const token = localStorage.getItem('token');
     
     try {
@@ -75,7 +75,7 @@ const ViewDocuments = ({ user, onLogout }) => {
 
   // Delete document - Use _id for API calls
   const deleteDocumentHandler = async (doc) => {
-    const docId = doc._id;
+    const docId = doc.documentId;
     
     try {
       await deleteDocument(docId);

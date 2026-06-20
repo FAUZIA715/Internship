@@ -10,7 +10,6 @@ const UploadDocuments = ({ user, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -118,7 +117,9 @@ const UploadDocuments = ({ user, onLogout }) => {
     try {
       for (const [docType, docData] of Object.entries(uploadedDocs)) {
         const docInfo = documentTypes.find(d => d.id === docType);
-        await uploadDocument(docData.file, docType, docInfo.name);
+        console.log('📤 Uploading:', docType, docData.file.name);
+        const result = await uploadDocument(docData.file, docType, docInfo.name);
+        console.log('✅ Upload result:', result);
       }
       
       showMessage('✅ All documents uploaded successfully! They will be verified by HR.', false);
@@ -127,6 +128,7 @@ const UploadDocuments = ({ user, onLogout }) => {
         navigate('/documents');
       }, 2000);
     } catch (error) {
+      console.error('❌ Upload error:', error);
       showMessage(error.message || '❌ Upload failed. Please try again.');
     } finally {
       setUploading(false);
@@ -140,7 +142,7 @@ const UploadDocuments = ({ user, onLogout }) => {
   return (
     <div className="page-wrapper">
       <div className="page-container">
-        {/* ====== NAVBAR ====== */}
+        {/* Navbar */}
         <div className="page-navbar">
           <div className="navbar-brand">
             <div className="brand-icon">
@@ -193,13 +195,13 @@ const UploadDocuments = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {/* ====== PAGE HEADER ====== */}
+        {/* Page Header */}
         <div className="page-header">
           <h1>Upload Documents</h1>
           <p>Please upload the required documents for background verification</p>
         </div>
 
-        {/* ====== MESSAGE ====== */}
+        {/* Message */}
         {message.visible && (
           <div className={`message-banner ${message.isError ? 'error' : 'success'}`}>
             <i className={`fas ${message.isError ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
@@ -207,7 +209,7 @@ const UploadDocuments = ({ user, onLogout }) => {
           </div>
         )}
 
-        {/* ====== UPLOAD FORM ====== */}
+        {/* Upload Form */}
         <form onSubmit={handleSubmit}>
           <div className="upload-grid">
             {documentTypes.map((doc) => (
@@ -287,7 +289,7 @@ const UploadDocuments = ({ user, onLogout }) => {
           </div>
         </form>
 
-        {/* ====== INFO BOX ====== */}
+        {/* Info Box */}
         <div className="info-box">
           <i className="fas fa-info-circle"></i>
           <div>
