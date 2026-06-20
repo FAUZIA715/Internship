@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const Report = require('../models/Report');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const htmlPdf = require('html-pdf-node');
@@ -13,7 +12,6 @@ try {
 } catch {
   Document = null;
 }
-
 // ─── Ensure reports directory exists ─────────────────────────────
 const reportsDir = path.join(__dirname, '..', 'reports');
 if (!fs.existsSync(reportsDir)) {

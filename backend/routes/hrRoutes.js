@@ -57,7 +57,7 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
     }
     
     const documents = await Document.find({ candidateId: candidate._id });
-    
+    const report = await Report.findLast({ candidateId: candidate._id });
     const docsMap = {};
     documents.forEach(doc => {
       docsMap[doc.documentType] = {
@@ -81,7 +81,8 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
       aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
       panStatus: docsMap.pan?.status || 'not_uploaded',
       degreeStatus: docsMap.degree?.status || 'not_uploaded',
-      employmentStatus: docsMap.employment?.status || 'not_uploaded'
+      employmentStatus: docsMap.employment?.status || 'not_uploaded',
+      reportId: report ? report._id : null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
