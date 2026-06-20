@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../utils/api'; // ✅ Fixed import
+import { login } from '../utils/api';
 
 function HRLogin() {
   const navigate = useNavigate();
@@ -18,14 +18,25 @@ function HRLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    console.log('🔍 HR Login - Sending:', { email, password, portalRole: 'hr' });
+    
     try {
-      // ✅ Using named import 'login'
       const data = await login(email, password, 'hr');
+      
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.user.role);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          isFirstLogin: data.isFirstLogin
+        }));
+        
         showMsg('Login successful! Redirecting...', false);
+        
         setTimeout(() => {
           if (data.isFirstLogin) {
             navigate('/hr/change-password');
@@ -34,13 +45,11 @@ function HRLogin() {
           }
         }, 1000);
       } else {
-        // In HRLogin.jsx, inside handleSubmit, add this line:
-console.log('🔍 Sending login request with:', { email, password, portalRole: 'hr' });
-        showMsg(data.message);
+        showMsg(data.message || 'Invalid credentials');
         setLoading(false);
       }
     } catch (error) {
-      console.error('HR Login error:', error);
+      console.error('❌ HR Login error:', error);
       showMsg('Connection error. Is the server running?');
       setLoading(false);
     }

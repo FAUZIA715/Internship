@@ -96,6 +96,7 @@ const Dashboard = ({ user, onLogout }) => {
   const goToUpload = () => navigate('/upload');
   const goToDocuments = () => navigate('/documents');
   const goToVerificationStatus = () => navigate('/verification-status');
+  const goToReports = () => navigate('/reports'); 
 
   // Format date for history
   const formatDate = (dateString) => {
@@ -309,7 +310,7 @@ const Dashboard = ({ user, onLogout }) => {
             <span className="action-arrow">→</span>
           </div>
           
-          <div className="action-card">
+          <div className="action-card" onClick={goToReports}>
             <div className="action-icon" style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)' }}>
               <i className="fas fa-file-pdf"></i>
             </div>

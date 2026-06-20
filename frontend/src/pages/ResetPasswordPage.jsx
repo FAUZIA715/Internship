@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { login } from '../utils/api';
 
 // Password strength validator — same rules as backend
@@ -13,10 +13,9 @@ const validatePassword = (password) => {
   return errors;
 };
 
-function ChangePasswordPage() {
+function ResetPasswordPage() {
   const navigate = useNavigate();
-  const { portalRole } = useParams();
-  const [oldPassword, setOldPassword] = useState('');
+  const { portalRole, token } = useParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,36 +46,35 @@ function ChangePasswordPage() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  const errors = validatePassword(newPassword);
-  if (errors.length > 0) {
-    setError(`Password requirements not met: ${errors[0]}`);
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-
-  setLoading(true);
-  try {
-    // ✅ Use changePassword directly
-    const data = await changePassword(oldPassword, newPassword);
-    if (data.success) {
-      setSuccess('Password updated successfully! Redirecting...');
-      setTimeout(() => navigate(`/${portalRole}/dashboard`), 1500);
-    } else {
-      setError(data.message);
+    const errors = validatePassword(newPassword);
+    if (errors.length > 0) {
+      setError(`Password requirements not met: ${errors[0]}`);
+      return;
     }
-  } catch {
-    setError('Something went wrong. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await api.resetPassword(token, { newPassword });
+      if (data.success) {
+        setSuccess('Password reset successful! Redirecting to login...');
+        setTimeout(() => navigate(`/${portalRole}/login`), 2000);
+      } else {
+        setError(data.message);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{
@@ -93,9 +91,9 @@ function ChangePasswordPage() {
             background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255,255,255,0.3)', borderRadius: '999px', padding: '6px 16px'
           }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a78bfa' }}></div>
             <span style={{ fontSize: '11px', fontWeight: 600, color: 'white', letterSpacing: '1px' }}>
-              {isHR ? 'HR PORTAL' : 'CANDIDATE PORTAL'} — ACTION REQUIRED
+              {isHR ? 'HR PORTAL' : 'CANDIDATE PORTAL'} — RESET PASSWORD
             </span>
           </div>
         </div>
@@ -108,42 +106,17 @@ function ChangePasswordPage() {
               width: '64px', height: '64px', background: gradient, borderRadius: '16px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
             }}>
-              <i className="fas fa-lock" style={{ fontSize: '28px', color: 'white' }}></i>
+              <i className="fas fa-shield-alt" style={{ fontSize: '28px', color: 'white' }}></i>
             </div>
             <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#1f2937', margin: '0 0 4px' }}>
-              Change Password
+              Reset Password
             </h1>
             <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-              Please set a new password to continue
+              Enter your new password below
             </p>
           </div>
 
-          {/* Warning */}
-          <div style={{
-            background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px',
-            padding: '10px 14px', marginBottom: '20px', fontSize: '12px', color: '#92400e',
-            display: 'flex', gap: '8px'
-          }}>
-            <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px', flexShrink: 0 }}></i>
-            <span>You are using a temporary password. Please change it immediately.</span>
-          </div>
-
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Current Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                Current Password
-              </label>
-              <input
-                type="password" value={oldPassword}
-                onChange={e => setOldPassword(e.target.value)}
-                required placeholder="Enter current password"
-                style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                onFocus={e => e.target.style.borderColor = accentColor}
-                onBlur={e => e.target.style.borderColor = '#d1d5db'}
-              />
-            </div>
 
             {/* New Password */}
             <div>
@@ -200,7 +173,7 @@ function ChangePasswordPage() {
             {/* Confirm Password */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                Confirm New Password
+                Confirm Password
               </label>
               <input
                 type="password" value={confirmPassword}
@@ -257,10 +230,18 @@ function ChangePasswordPage() {
               marginTop: '4px'
             }}>
               {loading
-                ? <><i className="fas fa-spinner fa-spin"></i> Updating...</>
-                : <><i className="fas fa-check"></i> Update Password</>
+                ? <><i className="fas fa-spinner fa-spin"></i> Resetting...</>
+                : <><i className="fas fa-check"></i> Reset Password</>
               }
             </button>
+
+            <Link to={`/${portalRole}/login`} style={{
+              textAlign: 'center', fontSize: '13px', color: accentColor,
+              textDecoration: 'none', fontWeight: 500, display: 'block'
+            }}>
+              <i className="fas fa-arrow-left" style={{ marginRight: '6px' }}></i>
+              Back to Login
+            </Link>
           </form>
         </div>
       </div>
@@ -268,4 +249,4 @@ function ChangePasswordPage() {
   );
 }
 
-export default ChangePasswordPage;
+export default ResetPasswordPage;

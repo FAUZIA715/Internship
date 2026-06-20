@@ -9,6 +9,9 @@ import UpdateDocument from './pages/UpdateDocument.jsx';
 import CandidateLogin from './pages/CandidateLogin.jsx';
 import HRLogin from './pages/HRLogin.jsx';
 import ChangePasswordPage from './pages/ChangePasswordPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';  // ✅ Added
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';    // ✅ Added
+import CandidateReports from './pages/CandidateReports.jsx';
 import './index.css';
 
 function App() {
@@ -28,6 +31,16 @@ function App() {
       try {
         const parsedUser = JSON.parse(userData);
         console.log('✅ App.jsx - User authenticated:', parsedUser);
+        
+        // ✅ Check if user needs to change password
+        if (parsedUser.isFirstLogin === true) {
+          console.log('⚠️ User needs to change password - redirecting...');
+          const role = parsedUser.role || 'candidate';
+          window.location.href = `/${role}/change-password`;
+          setLoading(false);
+          return;
+        }
+        
         setIsAuthenticated(true);
         setUser(parsedUser);
       } catch (e) {
@@ -49,13 +62,11 @@ function App() {
     window.location.href = '/candidate/login';
   };
 
-  // ✅ This function returns the correct dashboard component based on user role
   const getDashboardComponent = () => {
     if (user?.role === 'hr') return HRDashboard;
-    return Dashboard;  // ✅ Always return Dashboard for candidates
+    return Dashboard;
   };
 
-  // ✅ Get the correct dashboard component
   const DashboardComponent = getDashboardComponent();
 
   if (loading) {
@@ -69,7 +80,6 @@ function App() {
     );
   }
 
-  // ✅ Auth wrapper function - FIXED: Properly returns the component
   const requireAuth = (Component, role = null) => {
     if (!isAuthenticated) {
       const loginPath = role === 'hr' ? '/hr/login' : '/candidate/login';
@@ -79,7 +89,6 @@ function App() {
       const loginPath = role === 'hr' ? '/hr/login' : '/candidate/login';
       return <Navigate to={loginPath} replace />;
     }
-    // ✅ Return the component properly
     return Component;
   };
 
@@ -90,6 +99,15 @@ function App() {
           {/* Login Routes */}
           <Route path="/candidate/login" element={<CandidateLogin />} />
           <Route path="/hr/login" element={<HRLogin />} />
+
+          {/* Forgot Password Routes */}
+          <Route path="/candidate/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/hr/forgot-password" element={<ForgotPasswordPage />} />
+
+          {/* Reset Password Routes */}
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/candidate/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/hr/reset-password" element={<ResetPasswordPage />} />
 
           {/* Change Password Routes */}
           <Route path="/candidate/change-password" element={<ChangePasswordPage />} />
@@ -105,7 +123,7 @@ function App() {
             }
           />
 
-          {/* ✅ Candidate Routes - Fixed */}
+          {/* Candidate Routes */}
           <Route
             path="/candidate/dashboard"
             element={requireAuth(<DashboardComponent user={user} onLogout={handleLogout} />, 'candidate')}
@@ -121,6 +139,10 @@ function App() {
           <Route
             path="/verification-status"
             element={requireAuth(<UpdateDocument user={user} onLogout={handleLogout} />, 'candidate')}
+          />
+          <Route
+            path="/reports"
+            element={requireAuth(<CandidateReports user={user} onLogout={handleLogout} />, 'candidate')}
           />
           <Route
             path="/update/:documentId"

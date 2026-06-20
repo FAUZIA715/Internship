@@ -18,43 +18,32 @@ function CandidateLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    console.log('🔍 Candidate Login - Sending:', { email, password, portalRole: 'candidate' });
-    
+
     try {
       const data = await login(email, password, 'candidate');
-      
       console.log('📦 Candidate Login - Response:', data);
       
       if (data.success) {
-        // ✅ Store user data
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.user.role);
         localStorage.setItem('user', JSON.stringify({
           id: data.user.id,
           name: data.user.name,
           email: data.user.email,
-          role: data.user.role
+          role: data.user.role,
+          isFirstLogin: data.isFirstLogin
         }));
-        
-        console.log('✅ Candidate Login successful!');
-        console.log('📌 isFirstLogin:', data.isFirstLogin);
         
         showMsg('Login successful! Redirecting...', false);
         
         setTimeout(() => {
           if (data.isFirstLogin) {
-            // ✅ First time login - redirect to change password
-            console.log('🔄 First time login - redirecting to change password');
-            window.location.href = '/candidate/change-password';
+            navigate('/candidate/change-password');
           } else {
-            // ✅ Regular login - redirect to dashboard
-            console.log('🔄 Redirecting to candidate dashboard');
-            window.location.href = '/candidate/dashboard';
+            navigate('/candidate/dashboard');
           }
         }, 1000);
       } else {
-        console.log('❌ Candidate Login failed:', data.message);
         showMsg(data.message || 'Invalid credentials');
         setLoading(false);
       }

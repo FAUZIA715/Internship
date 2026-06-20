@@ -176,6 +176,57 @@ export const getCandidateDetails = async (candidateId) => {
 export const getDocumentHistory = async (candidateId) => {
   return await apiRequest(`/history/${candidateId}`);
 };
+// ============ REPORT APIs ============
+
+// Get all reports for candidate
+export const getReports = async () => {
+  return await apiRequest('/reports');
+};
+
+// Check if candidate has a report
+export const checkReportStatus = async () => {
+  return await apiRequest('/reports/check');
+};
+
+// Download report
+export const downloadReport = async (reportId) => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/reports/download/${reportId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Download failed');
+  }
+  
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'report';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+// Get report by ID
+export const getReportById = async (reportId) => {
+  return await apiRequest(`/reports/${reportId}`);
+};
+
+// HR: Generate report for candidate
+export const generateReport = async (candidateId) => {
+  return await apiRequest('/reports/generate', {
+    method: 'POST',
+    body: JSON.stringify({ candidateId })
+  });
+};
+
+// HR: Get all candidates with report status
+export const getCandidatesReportStatus = async () => {
+  return await apiRequest('/reports/candidates');
+};
 
 // ============ DEFAULT EXPORT ============
 export default {
