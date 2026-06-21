@@ -1,5 +1,5 @@
 const Document = require('../models/document');
-const User = require('../models/User');
+const User = require('../models/user');
 const fs = require('fs');
 const logHistory = require('../utils/historyLogger');
 

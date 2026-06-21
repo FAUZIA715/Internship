@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+
+
 const ReportSchema = new mongoose.Schema({
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,

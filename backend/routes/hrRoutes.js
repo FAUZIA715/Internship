@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const User = require('../models/user');
 const Document = require('../models/document');
+const Report = require('../models/report');
 const path = require('path');
 const fs = require('fs');
 
@@ -55,7 +56,7 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
     }
     
     const documents = await Document.find({ candidateId: candidate._id });
-    
+    const latestReport = await Report.findOne({ candidateId: candidate._id }).sort({ createdAt: -1 });
     const docsMap = {};
     documents.forEach(doc => {
       docsMap[doc.documentType] = {
@@ -79,7 +80,8 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
       aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
       panStatus: docsMap.pan?.status || 'not_uploaded',
       degreeStatus: docsMap.degree?.status || 'not_uploaded',
-      employmentStatus: docsMap.employment?.status || 'not_uploaded'
+      employmentStatus: docsMap.employment?.status || 'not_uploaded',
+      reportId: latestReport ? latestReport._id : null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

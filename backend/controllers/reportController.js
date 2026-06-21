@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const User = require('../models/User');
+const User = require('../models/user');
 const sendEmail = require('../utils/sendEmail');
 const htmlPdf = require('html-pdf-node');
+const Report = require('../models/report');
 
 // ─── INTEGRATION: Sachi's Document model (Module 2) ──────────────
 let Document;

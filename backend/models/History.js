@@ -76,6 +76,7 @@ const HistorySchema = new mongoose.Schema({
 
 HistorySchema.index({ candidateId: 1, timestamp: -1 });
 HistorySchema.index({ documentId: 1 });
+
 HistorySchema.index({ action: 1 });
 
 module.exports = mongoose.model('History', HistorySchema);
