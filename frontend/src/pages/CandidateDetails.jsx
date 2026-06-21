@@ -7,18 +7,15 @@ const CandidateDetails = () => {
   const navigate = useNavigate();
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(''); // ✅ Changed back to string
   const [updating, setUpdating] = useState(false);
   const [generating, setGenerating] = useState(false);
-  
-  const [aadhaarStatus, setAadhaarStatus] = useState('');
-  const [panStatus, setPanStatus] = useState('');
-  const [degreeStatus, setDegreeStatus] = useState('');
-  const [employmentStatus, setEmploymentStatus] = useState('');
+  const [aadhaarStatus, setAadhaarStatus] = useState('not_uploaded');
+  const [panStatus, setPanStatus] = useState('not_uploaded');
+  const [degreeStatus, setDegreeStatus] = useState('not_uploaded');
+  const [employmentStatus, setEmploymentStatus] = useState('not_uploaded');
 
-  useEffect(() => {
-    fetchCandidate();
-  }, [id]);
+  useEffect(() => { fetchCandidate(); }, [id]);
 
   const fetchCandidate = async () => {
     try {
@@ -77,14 +74,13 @@ const CandidateDetails = () => {
   const handleViewDocument = (docType) => {
     console.log('🔍 Viewing document:', docType);
     
-    
     if (!candidate) {
       alert('❌ Candidate data not loaded');
       return;
     }
-    //debugger;
+    
     const doc = candidate.documents?.[docType];
-    //console.log('📄 Document found:', doc);
+    console.log('📄 Document found:', doc);
     
     if (!doc) {
       alert(`❌ ${docType} document not uploaded`);
@@ -96,11 +92,12 @@ const CandidateDetails = () => {
       return;
     }
 
-    const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
-    //console.log('🔗 Opening:', docUrl);
-    window.open(docUrl, '_blank');
-  };
-//6a3275758a0bef34ec8ee4ba
+     const token = localStorage.getItem('token');
+const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?token=${token}`;
+  console.log('🔗 Opening:', docUrl);
+  window.open(docUrl, '_blank');
+};
+
   // ─── GENERATE REPORT ─────────────────────────────────────────────
   const handleGenerateReport = async () => {
     const allVerified = 
@@ -120,6 +117,13 @@ const CandidateDetails = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // ✅ Check if token exists
+      if (!token) {
+        setMessage('❌ Please login first!');
+        setGenerating(false);
+        return;
+      }
+
       const response = await fetch(`http://localhost:5000/api/reports/generate/${candidate._id}`, {
         method: 'POST',
         headers: {
@@ -127,6 +131,13 @@ const CandidateDetails = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      // ✅ Handle unauthorized response
+      if (response.status === 401) {
+        setMessage('❌ Session expired. Please login again.');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
 
       const data = await response.json();
 
@@ -138,9 +149,10 @@ const CandidateDetails = () => {
           reportId: data.report.id
         });
       } else {
-        setMessage(`❌ ${data.message}`);
+        setMessage(`❌ ${data.message || 'Failed to generate report'}`);
       }
     } catch (error) {
+      console.error('Error generating report:', error);
       setMessage('❌ Could not generate report.');
     } finally {
       setGenerating(false);
@@ -157,11 +169,23 @@ const CandidateDetails = () => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setMessage('❌ Please login first!');
+        return;
+      }
+
       const response = await fetch(`http://localhost:5000/api/reports/download/${candidate.reportId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      if (response.status === 401) {
+        setMessage('❌ Session expired. Please login again.');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -172,6 +196,7 @@ const CandidateDetails = () => {
       URL.revokeObjectURL(url);
       setMessage('✅ Download started!');
     } catch (error) {
+      console.error('Download error:', error);
       setMessage('❌ Download failed');
     }
     setTimeout(() => setMessage(''), 3000);
@@ -204,6 +229,7 @@ const CandidateDetails = () => {
         <h1>{candidate.name}</h1>
       </div>
 
+      {/* ✅ Fixed: message is now a string */}
       {message && <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>{message}</div>}
 
       <div className="details-card">
@@ -234,16 +260,9 @@ const CandidateDetails = () => {
                 <button onClick={() => handleUpdateDocument('aadhaar', aadhaarStatus, setAadhaarStatus)} disabled={updating}>
                   Update
                 </button>
-                {/* ─── VIEW BUTTON ─── */}
-<button 
-  className="view-doc-btn" 
-  onClick={() => {
-    console.log('Button clicked for aadhaar');
-    handleViewDocument('aadhaar');
-  }}
->
-  👁️ View
-</button>
+                <button className="view-doc-btn" onClick={() => handleViewDocument('aadhaar')}>
+                  👁️ View
+                </button>
               </div>
             </div>
 
@@ -260,16 +279,9 @@ const CandidateDetails = () => {
                 <button onClick={() => handleUpdateDocument('pan', panStatus, setPanStatus)} disabled={updating}>
                   Update
                 </button>
-                {/* ─── VIEW BUTTON ─── */}
-<button 
-  className="view-doc-btn" 
-  onClick={() => {
-    console.log('Button clicked for pan');
-    handleViewDocument('pan');
-  }}
->
-  👁️ View
-</button>
+                <button className="view-doc-btn" onClick={() => handleViewDocument('pan')}>
+                  👁️ View
+                </button>
               </div>
             </div>
 
@@ -286,14 +298,7 @@ const CandidateDetails = () => {
                 <button onClick={() => handleUpdateDocument('degree', degreeStatus, setDegreeStatus)} disabled={updating}>
                   Update
                 </button>
-                {/* ─── VIEW BUTTON ─── */}
-                <button 
-                  className="view-doc-btn" 
-                  onClick={() => {
-                    console.log('Button clicked for degree');
-                    handleViewDocument('degree');
-                  }}
-                >
+                <button className="view-doc-btn" onClick={() => handleViewDocument('degree')}>
                   👁️ View
                 </button>
               </div>
@@ -312,14 +317,7 @@ const CandidateDetails = () => {
                 <button onClick={() => handleUpdateDocument('employment', employmentStatus, setEmploymentStatus)} disabled={updating}>
                   Update
                 </button>
-                {/* ─── VIEW BUTTON ─── */}
-                <button 
-                  className="view-doc-btn" 
-                  onClick={() => {
-                    console.log('Button clicked for employment');
-                    handleViewDocument('employment');
-                  }}
-                >
+                <button className="view-doc-btn" onClick={() => handleViewDocument('employment')}>
                   👁️ View
                 </button>
               </div>

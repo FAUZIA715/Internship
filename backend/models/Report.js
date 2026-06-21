@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const ReportSchema = new mongoose.Schema({
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -22,7 +21,7 @@ const ReportSchema = new mongoose.Schema({
     {
       documentType: {
         type: String,
-        enum: ['aadhaar', 'pan', 'degree', 'employment', 'address']
+        enum: ['aadhaar', 'pan', 'degree', 'employment'] // address removed
       },
       status: {
         type: String,

@@ -1,26 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const {
+  login,
+  changePassword,
+  getProfile,
+  forgotPassword,
+  resetPassword
+} = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
-// Login route
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password, portalRole } = req.body;
-    
-    // Return a test token (replace with real auth later)
-    res.json({
-      success: true,
-      token: 'test-token-12345',
-      isFirstLogin: false,
-      user: {
-        id: '1',
-        name: 'HR User',
-        email: email || 'hr@example.com',
-        role: portalRole || 'hr'
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// Public routes
+router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
+
+// Protected routes
+router.put('/change-password', protect, changePassword);
+router.get('/profile', protect, getProfile);
 
 module.exports = router;

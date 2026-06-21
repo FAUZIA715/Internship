@@ -4,18 +4,8 @@
 .env.development
 .env.production
 
-
 # Dependencies
 node_modules/
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Upload folder (user uploaded files)
-uploads/
-reports/
 
 # OS files
 .DS_Store
@@ -24,9 +14,9 @@ Thumbs.db
 # VS Code
 .vscode/
 
-# Jest coverage
-coverage/
-
 # Build output
 dist/
 build/
+
+# Logs
+*.log

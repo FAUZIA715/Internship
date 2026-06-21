@@ -17,14 +17,17 @@ const HRDashboard = ({ user, onLogout }) => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/hr/candidates');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/hr/candidates', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
       setCandidates(data);
       
       const total = data.length;
-      const pending = data.filter(c => c.hrReviewStatus === 'Pending').length;
-      const approved = data.filter(c => c.hrReviewStatus === 'Approved').length;
-      const rejected = data.filter(c => c.hrReviewStatus === 'Rejected').length;
+      const pending = data.filter(c => candidateIsPending(c)).length;
+      const approved = data.filter(c => candidateIsApproved(c)).length;
+      const rejected = data.filter(c => candidateIsRejected(c)).length;
       
       const departments = [
         { name: 'Engineering', count: data.filter(c => c.department === 'Engineering').length },
@@ -144,5 +147,54 @@ const HRDashboard = ({ user, onLogout }) => {
     </div>
   );
 };
+
+// ✅ FIXED: Candidate is Approved when ALL documents are verified
+  const candidateIsApproved = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    // If any document is undefined or not 'verified', candidate is NOT approved
+    if (docs.some(s => s === undefined || s === 'pending' || s === 'rejected')) {
+      return false;
+    }
+    return docs.every(s => s === 'verified');
+  };
+
+  // ✅ FIXED: Candidate is Rejected when ANY document is rejected
+  const candidateIsRejected = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    // Check if any document exists and is rejected
+    return docs.some(s => s === 'rejected');
+  };
+
+  // ✅ FIXED: Candidate is Pending when NOT all verified AND NOT rejected
+  const candidateIsPending = (candidate) => {
+    const docs = [
+      candidate.documents?.aadhaar?.status,
+      candidate.documents?.pan?.status,
+      candidate.documents?.degree?.status,
+      candidate.documents?.employment?.status
+    ];
+    
+    // If any document is undefined (not uploaded), it's pending
+    if (docs.some(s => s === undefined)) return true;
+    
+    // If any document is rejected, it's NOT pending (it's rejected)
+    if (docs.some(s => s === 'rejected')) return false;
+    
+    // If ALL documents are verified, it's NOT pending (it's approved)
+    if (docs.every(s => s === 'verified')) return false;
+    
+    // Otherwise, it's pending (some are 'pending')
+    return docs.some(s => s === 'pending');
+  };
 
 export default HRDashboard;
