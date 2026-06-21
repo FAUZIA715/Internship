@@ -1,4 +1,4 @@
-const Document = require('../models/Document');
+const Document = require('../models/document');
 const User = require('../models/User');
 const fs = require('fs');
 const logHistory = require('../utils/historyLogger');

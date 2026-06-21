@@ -2,12 +2,10 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Document = require('../models/document');
-const Report = require('../models/report');
 const path = require('path');
 const fs = require('fs');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
-
 // ─── GET all candidates ───────────────────────────────────────────
 router.get('/candidates', protect, authorize('hr'), async (req, res) => {
   try {
@@ -38,7 +36,7 @@ router.get('/candidates', protect, authorize('hr'), async (req, res) => {
         aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
         panStatus: docsMap.pan?.status || 'not_uploaded',
         degreeStatus: docsMap.degree?.status || 'not_uploaded',
-        employmentStatus: docsMap.employment?.status || 'not_uploaded',
+        employmentStatus: docsMap.employment?.status || 'not_uploaded'
       };
     }));
     
@@ -57,7 +55,7 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
     }
     
     const documents = await Document.find({ candidateId: candidate._id });
-    const report = await Report.findLast({ candidateId: candidate._id });
+    
     const docsMap = {};
     documents.forEach(doc => {
       docsMap[doc.documentType] = {
@@ -81,8 +79,7 @@ router.get('/candidates/:id', protect, authorize('hr'), async (req, res) => {
       aadhaarStatus: docsMap.aadhaar?.status || 'not_uploaded',
       panStatus: docsMap.pan?.status || 'not_uploaded',
       degreeStatus: docsMap.degree?.status || 'not_uploaded',
-      employmentStatus: docsMap.employment?.status || 'not_uploaded',
-      reportId: report ? report._id : null,
+      employmentStatus: docsMap.employment?.status || 'not_uploaded'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
