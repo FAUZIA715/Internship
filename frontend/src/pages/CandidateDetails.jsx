@@ -92,10 +92,11 @@ const CandidateDetails = () => {
       return;
     }
 
-    const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}`;
-    console.log('🔗 Opening:', docUrl);
-    window.open(docUrl, '_blank');
-  };
+     const token = localStorage.getItem('token');
+const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?token=${token}`;
+  console.log('🔗 Opening:', docUrl);
+  window.open(docUrl, '_blank');
+};
 
   // ─── GENERATE REPORT ─────────────────────────────────────────────
   const handleGenerateReport = async () => {
