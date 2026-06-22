@@ -1,5 +1,5 @@
-const Document = require('../models/document');
-const User = require('../models/user');
+const Document = require('../models/Document');
+const User = require('../models/User');
 const fs = require('fs');
 const logHistory = require('../utils/historyLogger');
 
@@ -22,16 +22,57 @@ exports.uploadDocument = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a file' });
     }
 
-    const existingDoc = await Document.findOne({ candidateId, documentType });
+    // Check for existing document
+    const existingDoc = await Document.findOne({ 
+      candidateId, 
+      documentType 
+    });
+    
     if (existingDoc) {
-      if (fs.existsSync(existingDoc.filePath)) fs.unlinkSync(existingDoc.filePath);
-      await Document.deleteOne({ _id: existingDoc._id });
+      // Delete the old file
+      if (fs.existsSync(existingDoc.filePath)) {
+        fs.unlinkSync(existingDoc.filePath);
+      }
+      
+      // Update the existing document instead of delete + create
+      existingDoc.filePath = req.file.path;
+      existingDoc.fileName = req.file.filename;
+      existingDoc.fileSize = req.file.size;
+      existingDoc.mimeType = req.file.mimetype;
+      existingDoc.status = 'pending';
+      existingDoc.rejectionReason = null;
+      existingDoc.verifiedBy = null;
+      existingDoc.verifiedAt = null;
+      existingDoc.uploadDate = new Date();
+      
+      await existingDoc.save();
+      
+      await logHistory({
+        candidateId,
+        documentId: existingDoc._id,
+        documentType,
+        documentName,
+        action: 'UPDATED',
+        status: 'pending',
+        performedBy: req.user.id,
+        performedByRole: req.user.role,
+        performedByName: req.user.name,
+        details: `File updated: ${req.file.filename}`,
+        req
+      });
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Document updated successfully', 
+        document: existingDoc 
+      });
     }
 
+    // Create new document
     const document = await Document.create({
       candidateId,
       documentType,
-      documentName,
+      documentName: documentName,
       filePath: req.file.path,
       fileName: req.file.filename,
       fileSize: req.file.size,
@@ -56,6 +97,7 @@ exports.uploadDocument = async (req, res) => {
     res.status(201).json({ success: true, message: 'Document uploaded successfully', document });
   } catch (err) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    console.error('Upload error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -87,7 +129,8 @@ exports.getDocuments = async (req, res) => {
 // @desc    Get single document by ID
 exports.getDocumentById = async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id }).populate('candidateId', 'name email');
+    // Changed from documentId to _id for consistency with MongoDB
+    const document = await Document.findById(req.params.id).populate('candidateId', 'name email');
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
     
     if (req.user.role === 'candidate' && document.candidateId._id.toString() !== req.user.id) {
@@ -95,6 +138,7 @@ exports.getDocumentById = async (req, res) => {
     }
     res.status(200).json({ success: true, document });
   } catch (err) {
+    console.error('Get document by ID error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -102,7 +146,8 @@ exports.getDocumentById = async (req, res) => {
 // @desc    Download document
 exports.downloadDocument = async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id });
+    // Changed from documentId to _id for consistency
+    const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
     
     if (req.user.role === 'candidate' && document.candidateId.toString() !== req.user.id) {
@@ -129,6 +174,7 @@ exports.downloadDocument = async (req, res) => {
     
     res.download(document.filePath, document.fileName);
   } catch (err) {
+    console.error('Download error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -136,7 +182,8 @@ exports.downloadDocument = async (req, res) => {
 // @desc    Update document
 exports.updateDocument = async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id });
+    // Changed from documentId to _id
+    const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
     
     if (document.candidateId.toString() !== req.user.id) {
@@ -177,6 +224,7 @@ exports.updateDocument = async (req, res) => {
     res.status(200).json({ success: true, message: 'Document updated successfully', document });
   } catch (err) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    console.error('Update error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -184,7 +232,8 @@ exports.updateDocument = async (req, res) => {
 // @desc    Delete document
 exports.deleteDocument = async (req, res) => {
   try {
-    const document = await Document.findOne({ documentId: req.params.id });
+    // Changed from documentId to _id
+    const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
     
     if (req.user.role !== 'hr' && document.candidateId.toString() !== req.user.id) {
@@ -210,6 +259,7 @@ exports.deleteDocument = async (req, res) => {
     
     res.status(200).json({ success: true, message: 'Document deleted successfully' });
   } catch (err) {
+    console.error('Delete error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -218,7 +268,8 @@ exports.deleteDocument = async (req, res) => {
 exports.verifyDocument = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
-    const document = await Document.findOne({ documentId: req.params.id });
+    // Changed from documentId to _id
+    const document = await Document.findById(req.params.id);
     
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
     
@@ -256,6 +307,7 @@ exports.verifyDocument = async (req, res) => {
     
     res.status(200).json({ success: true, message: `Document ${status} successfully`, document });
   } catch (err) {
+    console.error('Verify error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -285,6 +337,7 @@ exports.getAllCandidatesStatus = async (req, res) => {
     }));
     res.status(200).json({ success: true, candidates: candidateData });
   } catch (err) {
+    console.error('Get all candidates status error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -299,11 +352,12 @@ exports.getCandidateDetails = async (req, res) => {
     const documents = await Document.find({ candidateId }).sort({ uploadDate: -1 });
     res.status(200).json({ success: true, candidate, documents });
   } catch (err) {
+    console.error('Get candidate details error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/// @desc    Get document history for a candidate
+// @desc    Get document history for a candidate
 exports.getDocumentHistory = async (req, res) => {
   try {
     const { candidateId } = req.params;

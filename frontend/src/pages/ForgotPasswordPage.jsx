@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../utils/api';
+import { forgotPassword } from '../utils/api';  // ✅ Fixed import
 
 function ForgotPasswordPage() {
   const { portalRole } = useParams();
@@ -18,14 +18,15 @@ function ForgotPasswordPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.forgotPassword({ email });
+      const data = await forgotPassword(email);  // ✅ Fixed: using named import
       if (data.success) {
         setSent(true);
       } else {
         setError(data.message);
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      console.error('Forgot password error:', err);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

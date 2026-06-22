@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/documents/upload"
+method: POST
+headers:
+  Authorization: Bearer {{token}}
+body:
+  type: formdata
+  content:
+    - type: text
+      key: documentType
+      value: aadhaar
+    - type: text
+      key: documentName
+      value: Aadhaar Card
+    - type: file
+      key: document
+      src:
+        - ""
+order: 2000

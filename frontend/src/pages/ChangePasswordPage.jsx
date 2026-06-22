@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { api } from '../utils/api';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const validatePassword = (password) => {
   const errors = [];
@@ -45,19 +45,19 @@ function ChangePasswordPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    const errors = validatePassword(newPassword);
-    if (errors.length > 0) {
-      setError(`Password requirements not met: ${errors[0]}`);
-      return;
-    }
+  const errors = validatePassword(newPassword);
+  if (errors.length > 0) {
+    setError(`Password requirements not met: ${errors[0]}`);
+    return;
+  }
 
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  if (newPassword !== confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
 
     setLoading(true);
     try {
@@ -75,7 +75,7 @@ function ChangePasswordPage() {
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <div style={{

@@ -22,13 +22,25 @@ function HRLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    console.log('🔍 HR Login - Sending:', { email, password, portalRole: 'hr' });
+    
     try {
-      const data = await api.login({ email, password, portalRole: 'hr' });
+      const data = await login(email, password, 'hr');
+      
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.user.role);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          isFirstLogin: data.isFirstLogin
+        }));
+        
         showMsg('Login successful! Redirecting...', false);
+        
         setTimeout(() => {
           if (data.isFirstLogin) {
             window.location.href = '/hr/change-password';
@@ -55,7 +67,6 @@ function HRLogin() {
       padding: '1rem', fontFamily: "'Inter', system-ui, sans-serif"
     }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
-
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',

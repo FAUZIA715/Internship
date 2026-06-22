@@ -1,3 +1,4 @@
+// models/User.js - Combined (Auth + Document module fields)
 const mongoose = require('mongoose');
 
 
@@ -21,17 +22,31 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['candidate', 'hr'],
-    required: [true, 'Role is required']
+    enum: ['candidate', 'hr', 'admin'],
+    default: 'candidate'
   },
   position: {
     type: String,
-    default: null  // Set when HR creates candidate account
+    default: null
   },
   isFirstLogin: {
     type: Boolean,
     default: true
   },
+  // Document module fields
+  phone: {
+    type: String,
+    default: null
+  },
+  address: {
+    type: String,
+    default: null
+  },
+  dateOfBirth: {
+    type: Date,
+    default: null
+  },
+  // Auth module fields
   resetPasswordToken: {
     type: String
   },

@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/api/history/{{candidateId}}"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+order: 1000

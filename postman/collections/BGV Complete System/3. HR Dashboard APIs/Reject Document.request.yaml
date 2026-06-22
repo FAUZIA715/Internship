@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/api/documents/{{documentId}}/verify"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+body:
+  type: text
+  content: |-
+    {
+      "status": "rejected",
+      "rejectionReason": "Document is blurry, please upload a clear copy"
+    }
+order: 4000

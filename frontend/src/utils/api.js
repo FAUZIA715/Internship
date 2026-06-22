@@ -1,6 +1,6 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
-// ─── Token Management ─────────────────────────────────────────────
+// ─── Token Management ──────────────────────────────────────
 const getToken = () => localStorage.getItem('token');
 const setToken = (token) => localStorage.setItem('token', token);
 const removeToken = () => localStorage.removeItem('token');
@@ -58,7 +58,10 @@ const CACHE_TTL = 30 * 1000; // 30 seconds
 const getCached = (key) => {
   const entry = cache.get(key);
   if (!entry) return null;
-  if (Date.now() - entry.time > CACHE_TTL) { cache.delete(key); return null; }
+  if (Date.now() - entry.time > CACHE_TTL) { 
+    cache.delete(key); 
+    return null; 
+  }
   return entry.data;
 };
 
@@ -117,7 +120,7 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-// ─── Module 1: Auth APIs (Srinjoy) ───────────────────────────────
+// ─── Module 1: Auth APIs ──────────────────────────────────────────
 
 export const login = async (emailOrObj, password, portalRole) => {
   let email;
@@ -128,10 +131,12 @@ export const login = async (emailOrObj, password, portalRole) => {
   } else {
     email = emailOrObj;
   }
+  
   const data = await apiRequest('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password, portalRole })
   });
+  
   if (data?.token) {
     setToken(data.token);
     setUser(data.user);
@@ -180,13 +185,14 @@ export const logout = () => {
   clearSession();
 };
 
-// ─── Module 2: Document APIs (Sachi) ─────────────────────────────
+// ─── Module 2: Document APIs ──────────────────────────────────────
 
 export const uploadDocument = async (file, documentType, documentName) => {
   const formData = new FormData();
   formData.append('document', file);
   formData.append('documentType', documentType);
   formData.append('documentName', documentName);
+  
   const result = await apiRequest('/documents/upload', {
     method: 'POST',
     body: formData
@@ -206,12 +212,15 @@ export const downloadDocument = async (documentId) => {
   const response = await fetch(`${API_BASE_URL}/documents/download/${documentId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
+  
   if (response.status === 401) {
     clearSession();
     window.location.href = '/candidate/login';
     return;
   }
+  
   if (!response.ok) throw new Error('Download failed');
+  
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -233,7 +242,9 @@ export const updateDocument = async (documentId, file) => {
 };
 
 export const deleteDocument = async (documentId) => {
-  return await apiRequest(`/documents/${documentId}`, { method: 'DELETE' });
+  return await apiRequest(`/documents/${documentId}`, { 
+    method: 'DELETE' 
+  });
 };
 
 export const verifyDocument = async (documentId, status, rejectionReason = null) => {
@@ -257,10 +268,13 @@ export const getDocumentHistory = async (candidateId) => {
   return await apiRequest(`/history/${candidateId}`);
 };
 
-// ─── Module 4: Report APIs (Srinjoy) ─────────────────────────────
+// ─── Module 3: Report APIs ───────────────────────────────────────
 
 export const generateReport = async (candidateId) => {
-  return await apiRequest(`/reports/generate/${candidateId}`, { method: 'POST' });
+  return await apiRequest('/reports/generate', {
+    method: 'POST',
+    body: JSON.stringify({ candidateId })
+  });
 };
 
 export const getReportByCandidate = async (candidateId) => {
@@ -271,17 +285,32 @@ export const getAllReports = async () => {
   return await apiRequest('/reports');
 };
 
+export const checkReportStatus = async () => {
+  return await apiRequest('/reports/check');
+};
+
+export const getReportById = async (reportId) => {
+  return await apiRequest(`/reports/${reportId}`);
+};
+
+export const getCandidatesReportStatus = async () => {
+  return await apiRequest('/reports/candidates');
+};
+
 export const downloadReport = async (reportId) => {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}/reports/download/${reportId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
+  
   if (response.status === 401) {
     clearSession();
     window.location.href = '/candidate/login';
     return;
   }
+  
   if (!response.ok) throw new Error('Download failed');
+  
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -295,12 +324,35 @@ export const downloadReport = async (reportId) => {
 
 // ─── Default export ───────────────────────────────────────────────
 export const api = {
-  login, changePassword, getProfile,
-  forgotPassword, resetPassword, logout,
-  uploadDocument, getDocuments, downloadDocument,
-  updateDocument, deleteDocument, verifyDocument,
-  getAllCandidates, getCandidateDetails, getDocumentHistory,
-  generateReport, getReportByCandidate, getAllReports, downloadReport
+  // Auth
+  login,
+  changePassword,
+  getProfile,
+  forgotPassword,
+  resetPassword,
+  logout,
+  verifySession,
+  clearSession,
+  
+  // Documents
+  uploadDocument,
+  getDocuments,
+  downloadDocument,
+  updateDocument,
+  deleteDocument,
+  verifyDocument,
+  getAllCandidates,
+  getCandidateDetails,
+  getDocumentHistory,
+  
+  // Reports
+  generateReport,
+  getReportByCandidate,
+  getAllReports,
+  checkReportStatus,
+  getReportById,
+  getCandidatesReportStatus,
+  downloadReport
 };
 
 export default api;
