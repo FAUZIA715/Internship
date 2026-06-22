@@ -1,14 +1,18 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../utils/api';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../utils/api';
 
 function HRLogin() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: true, visible: false });
+
+  const _token = localStorage.getItem('token');
+  const _role = localStorage.getItem('role');
+  if (_token && _role === 'candidate') { window.location.replace('/candidate/dashboard'); return null; }
+  if (_token && _role === 'hr') { window.location.replace('/hr/dashboard'); return null; }
 
   const showMsg = (text, isError = true) => {
     setMessage({ text, isError, visible: true });
@@ -39,18 +43,18 @@ function HRLogin() {
         
         setTimeout(() => {
           if (data.isFirstLogin) {
-            navigate('/hr/change-password');
+            window.location.href = '/hr/change-password';
           } else {
-            navigate('/hr/dashboard');
+            window.location.href = '/hr/dashboard';
           }
         }, 1000);
       } else {
-        showMsg(data.message || 'Invalid credentials');
-        setLoading(false);
+        showMsg(data.message);
       }
-    } catch (error) {
-      console.error('❌ HR Login error:', error);
-      showMsg('Connection error. Is the server running?');
+    } catch (err) {
+      // Show actual error message not generic connection error
+      showMsg(err.message || 'Something went wrong. Please try again.');
+    } finally {
       setLoading(false);
     }
   };

@@ -1,8 +1,155 @@
-const Report = require('../models/Report');
-const Document = require('../models/Document');
-const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Document = require('../models/Document');
+const Report = require('../models/Report');
+const sendEmail = require('../utils/sendEmail');
+const htmlPdf = require('html-pdf-node');
+
+// ─── Ensure reports directory exists ─────────────────────────────
+const reportsDir = path.join(__dirname, '..', 'reports');
+if (!fs.existsSync(reportsDir)) {
+  fs.mkdirSync(reportsDir, { recursive: true });
+}
+
+// ─── Helper: Get document label ──────────────────────────────────
+const getDocLabel = (type) => {
+  const labels = {
+    aadhaar: 'Aadhaar Card',
+    pan: 'PAN Card',
+    degree: 'Degree Certificate',
+    employment: 'Employment Proof',
+    address: 'Address Proof'
+  };
+  return labels[type] || type;
+};
+
+// ─── Helper: Get status badge for PDF ────────────────────────────
+const getStatusBadge = (status) => {
+  const badges = {
+    'verified': '<span style="color:#16a34a;font-weight:600;">✅ Verified</span>',
+    'rejected': '<span style="color:#dc2626;font-weight:600;">❌ Rejected</span>',
+    'pending': '<span style="color:#d97706;font-weight:600;">⏳ Pending</span>',
+    'not_uploaded': '<span style="color:#6b7280;font-weight:600;">⬜ Not Uploaded</span>'
+  };
+  return badges[status] || badges['not_uploaded'];
+};
+
+// ─── Helper: Get final decision ──────────────────────────────────
+const getFinalDecision = (documents) => {
+  const statuses = documents.map(d => d.status);
+  if (statuses.some(s => s === 'rejected')) return 'Not Clear';
+  if (statuses.every(s => s === 'verified')) return 'Clear';
+  return 'Pending';
+};
+
+// ─── Generate PDF from HTML ───────────────────────────────────────
+const generatePDF = async (reportData) => {
+  const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
+  const decision = reportData.finalDecision;
+
+  const decisionColors = {
+    'Clear':     { bg: '#f0fdf4', border: '#86efac', text: '#16a34a' },
+    'Not Clear': { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+    'Pending':   { bg: '#fffbeb', border: '#fde68a', text: '#d97706' }
+  };
+  const dc = decisionColors[decision] || decisionColors['Pending'];
+
+  const docRows = docTypes.map((type, i) => {
+    const doc = reportData.documents.find(d => d.documentType === type);
+    const status = doc?.status || 'not_uploaded';
+    const uploadDate = doc?.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('en-IN') : '—';
+    const verifiedDate = doc?.verifiedAt ? new Date(doc.verifiedAt).toLocaleDateString('en-IN') : '—';
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+
+    return `
+      <tr style="background:${bg};">
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">${getDocLabel(type)}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;">${getStatusBadge(status)}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${uploadDate}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${verifiedDate}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8"/>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; color: #1f2937; background: white; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); padding: 30px 40px; color: white; }
+        .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .header p { font-size: 13px; opacity: 0.85; }
+        .content { padding: 30px 40px; }
+        .section-title { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 6px; margin-top: 24px; }
+        .divider { height: 1px; background: #e5e7eb; margin-bottom: 14px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 6px 0; font-size: 13px; vertical-align: top; }
+        .info-table .label { font-weight: 700; color: #374151; width: 160px; }
+        .info-table .value { color: #6b7280; }
+        .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        .doc-table th { background: #f3f4f6; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 700; color: #374151; border: 1px solid #e5e7eb; }
+        .doc-table td { border: 1px solid #e5e7eb; }
+        .decision-box { background: ${dc.bg}; border: 2px solid ${dc.border}; border-radius: 8px; padding: 16px 20px; margin-bottom: 30px; }
+        .decision-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .decision-value { font-size: 22px; font-weight: 700; color: ${dc.text}; }
+        .footer { border-top: 1px solid #e5e7eb; padding: 16px 40px; text-align: center; font-size: 11px; color: #9ca3af; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>VeriFlow BGV System</h1>
+        <p>Background Verification Report &nbsp;|&nbsp; Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+      </div>
+      <div class="content">
+        <div class="section-title">Candidate Information</div>
+        <div class="divider"></div>
+        <table class="info-table">
+          <tr><td class="label">Full Name</td><td class="value">${reportData.candidateName}</td></tr>
+          <tr><td class="label">Email Address</td><td class="value">${reportData.candidateEmail}</td></tr>
+          <tr><td class="label">Position Applied</td><td class="value">${reportData.position || 'Not specified'}</td></tr>
+          <tr><td class="label">Generated By</td><td class="value">${reportData.generatedByName || 'HR Manager'}</td></tr>
+          <tr><td class="label">Report Date</td><td class="value">${new Date().toLocaleDateString('en-IN')}</td></tr>
+        </table>
+        <div class="section-title">Document Verification Status</div>
+        <div class="divider"></div>
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Document Type</th>
+              <th>Status</th>
+              <th>Upload Date</th>
+              <th>Verified Date</th>
+            </tr>
+          </thead>
+          <tbody>${docRows}</tbody>
+        </table>
+        <div class="section-title">Final Decision</div>
+        <div class="divider"></div>
+        <div class="decision-box">
+          <div class="decision-label">BGV FINAL DECISION</div>
+          <div class="decision-value">${decision.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="footer">
+        This report is generated by VeriFlow BGV System and is confidential. &nbsp;|&nbsp; Aibi Tech © 2026
+      </div>
+    </body>
+    </html>
+  `;
+
+  const fileName = `BGV_Report_${reportData.candidateId}_${Date.now()}.pdf`;
+  const filePath = path.join(reportsDir, fileName);
+  const file = { content: html };
+  const options = { format: 'A4', margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' } };
+  const pdfBuffer = await htmlPdf.generatePdf(file, options);
+  fs.writeFileSync(filePath, pdfBuffer);
+  return { fileName, filePath };
+};
 
 // ============ HR FUNCTIONS ============
 
@@ -23,18 +170,37 @@ exports.generateReport = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Candidate not found' });
     }
 
-    // Check if candidate has all documents verified
-    const documents = await Document.find({ candidateId });
+    if (candidate.role !== 'candidate') {
+      return res.status(400).json({ success: false, message: 'User is not a candidate' });
+    }
+
+    // Fetch documents
+    const documents = await Document.find({ candidateId }).sort({ uploadDate: 1 });
+
+    // Check verification status for required documents
     const requiredDocs = ['aadhaar', 'pan', 'degree', 'employment'];
     const docStatus = {};
-    
+    let allVerified = true;
+    let anyRejected = false;
+
     requiredDocs.forEach(type => {
       const doc = documents.find(d => d.documentType === type);
-      docStatus[type] = doc ? doc.status : 'not_uploaded';
+      const status = doc ? doc.status : 'not_uploaded';
+      docStatus[type] = status;
+      if (status !== 'verified') allVerified = false;
+      if (status === 'rejected') anyRejected = true;
     });
 
-    const allVerified = requiredDocs.every(type => docStatus[type] === 'verified');
-    const anyRejected = requiredDocs.some(type => docStatus[type] === 'rejected');
+    // Check if all required docs are uploaded (not just verified)
+    const allUploaded = requiredDocs.every(type => docStatus[type] !== 'not_uploaded');
+
+    if (!allUploaded) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot generate report. All required documents must be uploaded.',
+        docStatus
+      });
+    }
 
     if (!allVerified || anyRejected) {
       return res.status(400).json({
@@ -51,6 +217,29 @@ exports.generateReport = async (req, res) => {
     });
 
     if (existingReport) {
+      // If report exists but no PDF, generate it
+      if (!existingReport.filePath || !fs.existsSync(existingReport.filePath)) {
+        const reportData = {
+          candidateId: candidate._id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email,
+          position: candidate.position || 'Not specified',
+          generatedByName: req.user.name,
+          documents: documents.map(doc => ({
+            documentType: doc.documentType,
+            status: doc.status,
+            uploadDate: doc.uploadDate,
+            verifiedAt: doc.verifiedAt
+          })),
+          finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
+        };
+
+        const { fileName, filePath } = await generatePDF(reportData);
+        existingReport.fileName = fileName;
+        existingReport.filePath = filePath;
+        await existingReport.save();
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Report already generated',
@@ -58,47 +247,48 @@ exports.generateReport = async (req, res) => {
       });
     }
 
-    // Generate report data
+    // Generate report data for PDF
     const reportData = {
-      reportId: 'RPT_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-      generatedAt: new Date().toISOString(),
-      candidate: {
-        id: candidate._id,
-        name: candidate.name,
-        email: candidate.email,
-        phone: candidate.phone || 'Not provided',
-        address: candidate.address || 'Not provided',
-        dateOfBirth: candidate.dateOfBirth ? new Date(candidate.dateOfBirth).toLocaleDateString() : 'Not provided',
-        position: candidate.position || 'Not specified'
-      },
+      candidateId: candidate._id,
+      candidateName: candidate.name,
+      candidateEmail: candidate.email,
+      position: candidate.position || 'Not specified',
+      generatedByName: req.user.name,
       documents: documents.map(doc => ({
-        type: doc.documentType,
-        name: doc.documentName,
+        documentType: doc.documentType,
         status: doc.status,
-        uploadedAt: doc.uploadDate,
-        verifiedAt: doc.verifiedAt,
-        rejectionReason: doc.rejectionReason || null
+        uploadDate: doc.uploadDate,
+        verifiedAt: doc.verifiedAt
       })),
-      summary: {
-        totalDocuments: documents.length,
-        verifiedCount: documents.filter(d => d.status === 'verified').length,
-        pendingCount: documents.filter(d => d.status === 'pending').length,
-        rejectedCount: documents.filter(d => d.status === 'rejected').length,
-        overallStatus: allVerified ? 'VERIFIED' : 'PENDING'
-      }
+      finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
     };
 
-    // Create report
+    // Generate PDF
+    const { fileName, filePath } = await generatePDF(reportData);
+
+    // Create report record
     const report = await Report.create({
       candidateId,
       candidateName: candidate.name,
       candidateEmail: candidate.email,
       reportName: `BGV_Report_${candidate.name.replace(/\s/g, '_')}_${Date.now()}`,
-      reportData,
+      reportData: {
+        ...reportData,
+        summary: {
+          totalDocuments: documents.length,
+          verifiedCount: documents.filter(d => d.status === 'verified').length,
+          pendingCount: documents.filter(d => d.status === 'pending').length,
+          rejectedCount: documents.filter(d => d.status === 'rejected').length,
+          overallStatus: allVerified ? 'VERIFIED' : 'PENDING'
+        }
+      },
       status: 'generated',
       generatedBy: req.user.id,
       generatedByName: req.user.name,
-      generatedAt: new Date()
+      generatedAt: new Date(),
+      filePath,
+      fileName,
+      isDownloaded: false
     });
 
     res.status(201).json({
@@ -131,10 +321,17 @@ exports.getCandidatesReportStatus = async (req, res) => {
         aadhaar: documents.find(d => d.documentType === 'aadhaar')?.status || 'not_uploaded',
         pan: documents.find(d => d.documentType === 'pan')?.status || 'not_uploaded',
         degree: documents.find(d => d.documentType === 'degree')?.status || 'not_uploaded',
-        employment: documents.find(d => d.documentType === 'employment')?.status || 'not_uploaded'
+        employment: documents.find(d => d.documentType === 'employment')?.status || 'not_uploaded',
+        address: documents.find(d => d.documentType === 'address')?.status || 'not_uploaded'
       };
 
-      const allVerified = Object.values(docStatus).every(status => status === 'verified');
+      const allVerified = ['aadhaar', 'pan', 'degree', 'employment'].every(
+        type => docStatus[type] === 'verified'
+      );
+
+      const allUploaded = ['aadhaar', 'pan', 'degree', 'employment'].every(
+        type => docStatus[type] !== 'not_uploaded'
+      );
 
       return {
         ...candidate.toObject(),
@@ -142,7 +339,9 @@ exports.getCandidatesReportStatus = async (req, res) => {
         reportStatus: report ? 'generated' : 'not_generated',
         reportId: report?.reportId || null,
         reportGeneratedAt: report?.generatedAt || null,
-        allVerified
+        allVerified,
+        allUploaded,
+        canGenerateReport: allUploaded && allVerified && !report
       };
     }));
 
@@ -188,7 +387,7 @@ exports.getReportById = async (req, res) => {
   try {
     const report = await Report.findOne({ 
       reportId: req.params.id,
-      candidateId: req.user.id  // ✅ Ensure candidate owns the report
+      candidateId: req.user.id
     })
     .populate('generatedBy', 'name email');
 
@@ -214,7 +413,7 @@ exports.downloadReport = async (req, res) => {
   try {
     const report = await Report.findOne({ 
       reportId: req.params.id,
-      candidateId: req.user.id  // ✅ Ensure candidate owns the report
+      candidateId: req.user.id
     });
 
     if (!report) {
@@ -225,7 +424,7 @@ exports.downloadReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Report is not ready for download' });
     }
 
-    // ✅ Update download status
+    // Update download status
     report.isDownloaded = true;
     report.downloadedAt = new Date();
     await report.save();
@@ -235,13 +434,31 @@ exports.downloadReport = async (req, res) => {
       return res.download(report.filePath, report.fileName || 'report.pdf');
     }
 
-    // If no file exists, send JSON data as a downloadable file
-    const jsonData = JSON.stringify(report.reportData, null, 2);
-    const jsonBuffer = Buffer.from(jsonData, 'utf-8');
+    // If no file exists, generate PDF on the fly
+    const documents = await Document.find({ candidateId: req.user.id });
+    const reportData = {
+      candidateId: req.user.id,
+      candidateName: report.candidateName,
+      candidateEmail: report.candidateEmail,
+      position: report.reportData?.position || 'Not specified',
+      generatedByName: report.generatedByName || 'HR Manager',
+      documents: documents.map(doc => ({
+        documentType: doc.documentType,
+        status: doc.status,
+        uploadDate: doc.uploadDate,
+        verifiedAt: doc.verifiedAt
+      })),
+      finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
+    };
+
+    const { fileName, filePath } = await generatePDF(reportData);
     
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=${report.reportName || 'report'}.json`);
-    res.send(jsonBuffer);
+    // Update report with file path
+    report.filePath = filePath;
+    report.fileName = fileName;
+    await report.save();
+
+    return res.download(filePath, fileName);
 
   } catch (err) {
     console.error('Download report error:', err);

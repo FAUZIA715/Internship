@@ -87,7 +87,7 @@ const UpdateDocument = ({ user, onLogout }) => {
   const handleLogout = () => {
     logout();
     if (onLogout) onLogout();
-    navigate('/candidate/login');
+    window.location.href = '/candidate/login'; // FIX: use window.location.href
   };
 
   const goToDashboard = () => {
@@ -95,7 +95,7 @@ const UpdateDocument = ({ user, onLogout }) => {
   };
 
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/creset-password');
+  const goToResetPassword = () => { window.location.href = '/candidate/forgot-password'; }; // FIX: correct route
 
   // ============ PORTAL REDIRECT FUNCTIONS ============
   

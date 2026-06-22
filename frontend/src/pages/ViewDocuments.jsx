@@ -42,16 +42,16 @@ const ViewDocuments = ({ user, onLogout }) => {
   const handleLogout = () => {
     logout();
     if (onLogout) onLogout();
-    navigate('/candidate/login');
+    window.location.href = '/candidate/login'; // FIX: use window.location.href
   };
 
   const goToDashboard = () => navigate('/candidate/dashboard');
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/reset-password');
+  const goToResetPassword = () => { window.location.href = '/candidate/forgot-password'; }; // FIX: correct route
 
   // View document - Use _id for API calls
   const viewDocument = async (doc) => {
-    const docId = doc.documentId;
+    const docId = doc._id;
     const token = localStorage.getItem('token');
     
     try {
@@ -75,7 +75,7 @@ const ViewDocuments = ({ user, onLogout }) => {
 
   // Delete document - Use _id for API calls
   const deleteDocumentHandler = async (doc) => {
-    const docId = doc.documentId;
+    const docId = doc._id;
     
     try {
       await deleteDocument(docId);

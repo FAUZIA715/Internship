@@ -16,17 +16,19 @@ const DocumentSchema = new mongoose.Schema({
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   documentType: {
     type: String,
-    required: true,
-    enum: ['aadhaar', 'pan', 'degree', 'employment', 'address']
+    enum: ['aadhaar', 'pan', 'degree', 'employment', 'address'],
+    required: true
   },
   documentName: {
     type: String,
     required: true
   },
+  // ✅ File storage fields (combined from both branches)
   filePath: {
     type: String,
     required: true
@@ -41,18 +43,31 @@ const DocumentSchema = new mongoose.Schema({
   },
   mimeType: {
     type: String,
-    required: true
+    enum: ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'],
+    required: true,
+    default: 'application/pdf'
   },
-  uploadDate: {
-    type: Date,
-    default: Date.now
-  },
+  // ✅ Document status tracking
   status: {
     type: String,
     enum: ['pending', 'verified', 'rejected'],
     default: 'pending'
   },
-  // NEW: Portal verification status (for Aadhaar/PAN)
+  rejectionReason: {
+    type: String,
+    default: null
+  },
+  // ✅ HR verification fields
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  verifiedAt: {
+    type: Date,
+    default: null
+  },
+  // ✅ Portal verification (for Aadhaar/PAN - from Final_flow)
   portalVerified: {
     type: Boolean,
     default: false
@@ -65,23 +80,18 @@ const DocumentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  rejectionReason: {
-    type: String,
-    default: null
-  },
-  verifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  verifiedAt: {
+  // ✅ Upload tracking
+  uploadDate: {
     type: Date,
-    default: null
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
+// Index for faster queries
 DocumentSchema.index({ candidateId: 1, documentType: 1 });
+DocumentSchema.index({ documentId: 1 });
+DocumentSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Document', DocumentSchema);

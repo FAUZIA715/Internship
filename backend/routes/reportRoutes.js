@@ -9,6 +9,13 @@ const {
   downloadReport,
   checkReportStatus
 } = require('../controllers/reportController');
+const { protect, authorize } = require('../middleware/authMiddleware');
+
+// HR generates report for a candidate
+router.post('/generate/:candidateId', protect, generateReport);
+
+// Get report by candidate ID (candidate sees own, HR sees any)
+router.get('/candidate/:candidateId', protect, getReportByCandidate);
 
 // ============ HR ROUTES ============
 router.post('/generate', protect, authorize('hr'), generateReport);

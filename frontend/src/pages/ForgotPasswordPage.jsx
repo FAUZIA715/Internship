@@ -40,7 +40,6 @@ function ForgotPasswordPage() {
     }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
 
-        {/* Badge */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -56,7 +55,6 @@ function ForgotPasswordPage() {
 
         <div style={{ background: 'white', borderRadius: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', padding: '2rem' }}>
 
-          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div style={{
               width: '64px', height: '64px', background: gradient, borderRadius: '16px',
@@ -72,7 +70,6 @@ function ForgotPasswordPage() {
             </p>
           </div>
 
-          {/* Success State */}
           {sent ? (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <div style={{
@@ -104,7 +101,6 @@ function ForgotPasswordPage() {
               </Link>
             </div>
           ) : (
-            /* Form */
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
@@ -128,6 +124,7 @@ function ForgotPasswordPage() {
                   padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
                   background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca'
                 }}>
+                  <i className="fas fa-exclamation-circle" style={{ marginRight: '6px' }}></i>
                   {error}
                 </div>
               )}

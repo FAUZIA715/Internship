@@ -57,18 +57,18 @@ const UploadDocuments = ({ user, onLogout }) => {
 
   const showMessage = (text, isError = true) => {
     setMessage({ text, isError, visible: true });
-    setTimeout(() => setMessage({ ...message, visible: false }), 4000);
+    setTimeout(() => setMessage({ text, isError, visible: false }), 4000);
   };
 
   const handleLogout = () => {
     logout();
     if (onLogout) onLogout();
-    navigate('/candidate/login');
+    window.location.href = '/candidate/login';
   };
 
   const goToDashboard = () => navigate('/candidate/dashboard');
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/reset-password');
+  const goToResetPassword = () => window.location.href = '/candidate/forgot-password';
 
   const handleFileChange = (docType, file) => {
     if (!file) return;
@@ -183,7 +183,7 @@ const UploadDocuments = ({ user, onLogout }) => {
                 </button>
                 <button onClick={goToResetPassword} className="dropdown-item">
                   <i className="fas fa-key"></i>
-                  <span>Reset Password</span>
+                  <span>Forgot Password</span>
                 </button>
                 <div className="dropdown-divider"></div>
                 <button onClick={handleLogout} className="dropdown-item logout">
@@ -249,7 +249,7 @@ const UploadDocuments = ({ user, onLogout }) => {
                       <i className="fas fa-cloud-upload-alt"></i> Choose File
                       <input 
                         type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         onChange={(e) => handleFileChange(doc.id, e.target.files[0])}
                         hidden
                       />
@@ -298,7 +298,7 @@ const UploadDocuments = ({ user, onLogout }) => {
               <li>All documents will show <strong>"Pending"</strong> status after upload</li>
               <li>HR will review and verify your documents</li>
               <li>You will be notified when documents are verified or rejected</li>
-              <li>Accepted formats: PDF (max 10MB per file)</li>
+              <li>Accepted format: PDF only (max 10MB per file)</li>
             </ul>
           </div>
         </div>

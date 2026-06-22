@@ -1,6 +1,7 @@
 // models/User.js - Combined (Auth + Document module fields)
 const mongoose = require('mongoose');
 
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,

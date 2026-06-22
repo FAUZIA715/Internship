@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDocuments, logout, getDocumentHistory } from '../utils/api';
 
@@ -68,10 +68,8 @@ const Dashboard = ({ user, onLogout }) => {
       const userId = user?.id;
       
       if (userId) {
-        const response = await fetch(`http://localhost:5000/api/history/${userId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
+        // Using api utility for consistency
+        const data = await getDocumentHistory(userId);
         if (data.success) {
           setHistory(data.history || []);
         }
@@ -87,16 +85,16 @@ const Dashboard = ({ user, onLogout }) => {
   const handleLogout = () => {
     logout();
     if (onLogout) onLogout();
-    navigate('/candidate/login');
+    window.location.href = '/candidate/login';
   };
 
   // Navigate to pages
   const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/reset-password');
+  const goToResetPassword = () => navigate('/candidate/forgot-password');
   const goToUpload = () => navigate('/upload');
   const goToDocuments = () => navigate('/documents');
   const goToVerificationStatus = () => navigate('/verification-status');
-  const goToReports = () => navigate('/reports'); 
+  const goToReports = () => navigate('/verification-status');
 
   // Format date for history
   const formatDate = (dateString) => {
@@ -220,7 +218,7 @@ const Dashboard = ({ user, onLogout }) => {
                 </button>
                 <button onClick={goToResetPassword} className="dropdown-item">
                   <i className="fas fa-key"></i>
-                  <span>Reset Password</span>
+                  <span>Forgot Password</span>
                 </button>
                 <div className="dropdown-divider"></div>
                 <button onClick={handleLogout} className="dropdown-item logout">
