@@ -135,7 +135,7 @@ const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?tok
       // ✅ Handle unauthorized response
       if (response.status === 401) {
         setMessage('❌ Session expired. Please login again.');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/hr/login'), 2000);
         return;
       }
 
@@ -183,7 +183,7 @@ const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?tok
 
       if (response.status === 401) {
         setMessage('❌ Session expired. Please login again.');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/hr/login'), 2000);
         return;
       }
 
