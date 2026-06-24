@@ -22,6 +22,7 @@ const HRDashboard = ({ user, onLogout }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
+      if (!Array.isArray(data)) return;
       setCandidates(data);
       
       const total = data.length;

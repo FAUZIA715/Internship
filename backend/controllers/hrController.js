@@ -1,6 +1,6 @@
-const User = require('../models/user');
+const User = require('../models/User');
 const Document = require('../models/document');
-const Report = require('../models/report');
+const Report = require('../models/Report');
 const fs = require('fs');
 
 // Builds a map of documentType -> document details for a candidate's documents
@@ -106,7 +106,7 @@ exports.updateDocumentStatus = async (req, res) => {
 
     let updateData = {
       status: status,
-      verifiedBy: 'HR'
+      verifiedBy: req.user.id
     };
 
     if (status === 'verified') {
@@ -127,15 +127,12 @@ exports.updateDocumentStatus = async (req, res) => {
       { $set: updateData }
     );
 
-    console.log(`✅ ${docType} updated to ${status} for candidate ${id}`);
-
     res.json({
       success: true,
       message: `${docType} status updated to ${status}`
     });
 
   } catch (err) {
-    console.error('❌ Error:', err);
     res.status(500).json({
       success: false,
       error: err.message
@@ -147,39 +144,13 @@ exports.updateDocumentStatus = async (req, res) => {
 exports.viewDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
-
     const doc = await Document.findOne({ documentId: documentId });
-
     if (!doc) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found in database'
-      });
+      return res.status(404).json({ success: false, message: 'Document not found in database' });
     }
-
-    const filePath = doc.filePath;
-
-    if (!filePath) {
-      return res.status(404).json({
-        success: false,
-        message: 'File path not found in database'
-      });
-    }
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File does not exist on server'
-      });
-    }
-
-    res.sendFile(filePath);
-
+    // Redirect to Cloudinary URL — accessible from any machine
+    res.redirect(doc.filePath);
   } catch (error) {
-    console.error('Error viewing document:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };

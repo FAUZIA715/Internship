@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { api } from '../utils/api';
 
 function CandidateLogin() {
   const [email, setEmail] = useState('');
@@ -7,8 +8,6 @@ function CandidateLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: true, visible: false });
-
-  const navigate = useNavigate();
 
   // Check for existing session and redirect appropriately
   const _token = localStorage.getItem('token');
@@ -32,10 +31,7 @@ function CandidateLogin() {
     setLoading(true);
 
     try {
-      // Assuming login is imported from api or defined elsewhere
-      const { login } = await import('../utils/api');
-      const data = await login(email, password, 'candidate');
-      console.log('📦 Candidate Login - Response:', data);
+      const data = await api.login({ email, password, portalRole: 'candidate' });
       
       if (data.success) {
         localStorage.setItem('token', data.token);
@@ -52,9 +48,9 @@ function CandidateLogin() {
         
         setTimeout(() => {
           if (data.isFirstLogin) {
-            navigate('/candidate/change-password');
+            window.location.href = '/candidate/change-password';
           } else {
-            navigate('/candidate/dashboard');
+            window.location.href = '/candidate/dashboard';
           }
         }, 1000);
       } else {

@@ -50,27 +50,16 @@ const ViewDocuments = ({ user, onLogout }) => {
   const goToResetPassword = () => { window.location.href = '/candidate/forgot-password'; }; // FIX: correct route
 
   // View document - Use _id for API calls
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   const viewDocument = async (doc) => {
-    const docId = doc._id;
-    const token = localStorage.getItem('token');
-    
-    try {
-      const response = await fetch(`http://localhost:5000/api/documents/download/${docId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-      } else {
-        const error = await response.json();
-        alert('Failed to open document: ' + (error.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error opening document:', error);
-      alert('Error opening document: ' + error.message);
+    if (doc.filePath && doc.filePath.startsWith('http')) {
+      // Use Google Docs viewer to display PDF inline — works on any browser
+      const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(doc.filePath)}&embedded=true`;
+      setPreviewUrl(googleViewerUrl);
+      return;
     }
+    alert('This document was uploaded before Cloudinary integration. Please re-upload it.');
   };
 
   // Delete document - Use _id for API calls
@@ -295,6 +284,26 @@ const ViewDocuments = ({ user, onLogout }) => {
           <h1 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'white', margin: '0 0 4px 0', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>My Documents</h1>
           <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: '1rem' }}>View all your uploaded documents</p>
         </div>
+
+        {/* ====== PDF PREVIEW MODAL ====== */}
+        {previewUrl && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', zIndex: 3000
+          }}>
+            <div style={{ width: '90%', height: '90%', background: 'white', borderRadius: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, color: '#1f2937' }}>Document Preview</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <a href={previewUrl.replace('https://docs.google.com/viewer?url=', '').replace('&embedded=true', '').split('?')[0]} target="_blank" rel="noreferrer" style={{ padding: '6px 14px', background: '#667eea', color: 'white', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>⬇️ Download</a>
+                  <button onClick={() => setPreviewUrl(null)} style={{ padding: '6px 14px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>✕ Close</button>
+                </div>
+              </div>
+              <iframe src={previewUrl} style={{ flex: 1, border: 'none', width: '100%' }} title="Document Preview" />
+            </div>
+          </div>
+        )}
 
         {/* ====== DELETE MODAL ====== */}
         {deleteConfirm && (

@@ -23,10 +23,8 @@ function HRLogin() {
     e.preventDefault();
     setLoading(true);
     
-    console.log('🔍 HR Login - Sending:', { email, password, portalRole: 'hr' });
-    
     try {
-      const data = await login(email, password, 'hr');
+      const data = await api.login({ email, password, portalRole: 'hr' });
       
       if (data.success) {
         localStorage.setItem('token', data.token);

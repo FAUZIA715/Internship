@@ -26,7 +26,6 @@ const CandidateDetails = () => {
         }
       });
       const data = await response.json();
-      console.log('📥 Candidate data:', data);
       setCandidate(data);
       setAadhaarStatus(data.aadhaarStatus || 'not_uploaded');
       setPanStatus(data.panStatus || 'not_uploaded');
@@ -72,31 +71,20 @@ const CandidateDetails = () => {
 
   // ─── VIEW DOCUMENT ──────────────────────────────────────────────
   const handleViewDocument = (docType) => {
-    console.log('🔍 Viewing document:', docType);
-    
-    if (!candidate) {
-      alert('❌ Candidate data not loaded');
-      return;
-    }
-    
+    if (!candidate) { alert('❌ Candidate data not loaded'); return; }
     const doc = candidate.documents?.[docType];
-    console.log('📄 Document found:', doc);
-    
-    if (!doc) {
-      alert(`❌ ${docType} document not uploaded`);
-      return;
+    if (!doc) { alert(`❌ ${docType} document not uploaded`); return; }
+    if (!doc.filePath) { alert(`❌ File path not found`); return; }
+    // Open Cloudinary URL directly with inline flag
+    let url = doc.filePath;
+    if (url.startsWith('http')) {
+      // Use Google Docs viewer to display PDF inline
+      const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      window.open(googleViewerUrl, '_blank');
+    } else {
+      alert('❌ This document was uploaded before Cloudinary. Please ask candidate to re-upload.');
     }
-
-    if (!doc.documentId) {
-      alert(`❌ Document ID not found for ${docType}`);
-      return;
-    }
-
-     const token = localStorage.getItem('token');
-const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?token=${token}`;
-  console.log('🔗 Opening:', docUrl);
-  window.open(docUrl, '_blank');
-};
+  };
 
   // ─── GENERATE REPORT ─────────────────────────────────────────────
   const handleGenerateReport = async () => {
@@ -142,17 +130,18 @@ const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?tok
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setMessage(`✅ Report generated! Decision: ${data.report.finalDecision}`);
-        setCandidate({
-          ...candidate,
+        const report = data.report;
+        const finalDecision = report.reportData?.finalDecision || report.finalDecision || 'Pending';
+        setMessage(`✅ Report generated! Decision: ${finalDecision}`);
+        setCandidate(prev => ({
+          ...prev,
           reportGenerated: true,
-          reportId: data.report.id
-        });
+          reportId: report._id || report.id
+        }));
       } else {
         setMessage(`❌ ${data.message || 'Failed to generate report'}`);
       }
     } catch (error) {
-      console.error('Error generating report:', error);
       setMessage('❌ Could not generate report.');
     } finally {
       setGenerating(false);
@@ -196,7 +185,6 @@ const docUrl = `http://localhost:5000/api/hr/view-document/${doc.documentId}?tok
       URL.revokeObjectURL(url);
       setMessage('✅ Download started!');
     } catch (error) {
-      console.error('Download error:', error);
       setMessage('❌ Download failed');
     }
     setTimeout(() => setMessage(''), 3000);

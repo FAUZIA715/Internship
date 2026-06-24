@@ -1,38 +1,37 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// ─── Configure Cloudinary ─────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userFolder = path.join(uploadDir, req.user.id);
-    if (!fs.existsSync(userFolder)) {
-      fs.mkdirSync(userFolder, { recursive: true });
-    }
-    cb(null, userFolder);
-  },
-  filename: (req, file, cb) => {
+// ─── Configure Cloudinary Storage ────────────────────────────────
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
     const documentType = req.body.documentType || 'document';
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `${documentType}_${timestamp}${ext}`);
+    const candidateId = req.user?.id || 'unknown';
+    const isPdf = file.mimetype === 'application/pdf';
+    return {
+      folder: `bgv_system/${candidateId}`,
+      public_id: `${documentType}_${Date.now()}`,
+      resource_type: isPdf ? 'raw' : 'image',
+      allowed_formats: ['pdf', 'jpg', 'jpeg', 'png'],
+    };
   }
 });
 
-// File filter for validation
+// ─── File filter ──────────────────────────────────────────────────
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-  
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, JPG, PNG, JPEG are allowed'), false);
+    cb(new Error('Invalid file type. Only PDF, JPG, PNG are allowed'), false);
   }
 };
 
@@ -42,4 +41,4 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-module.exports = { upload };
+module.exports = { upload, cloudinary };

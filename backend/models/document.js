@@ -94,4 +94,4 @@ DocumentSchema.index({ candidateId: 1, documentType: 1 });
 DocumentSchema.index({ documentId: 1 });
 DocumentSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Document', DocumentSchema);
+module.exports = mongoose.models.Document || mongoose.model('Document', DocumentSchema);

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const Document = require('../models/Document');
+const Document = require('../models/document');
 const Report = require('../models/Report');
 const sendEmail = require('../utils/sendEmail');
 const htmlPdf = require('html-pdf-node');
@@ -158,7 +158,7 @@ const generatePDF = async (reportData) => {
 // @access  Private (HR only)
 exports.generateReport = async (req, res) => {
   try {
-    const { candidateId } = req.body;
+    const candidateId = req.params.candidateId || req.body.candidateId;
     
     if (!candidateId) {
       return res.status(400).json({ success: false, message: 'Candidate ID is required' });
@@ -271,6 +271,7 @@ exports.generateReport = async (req, res) => {
       candidateId,
       candidateName: candidate.name,
       candidateEmail: candidate.email,
+      finalDecision: reportData.finalDecision,
       reportName: `BGV_Report_${candidate.name.replace(/\s/g, '_')}_${Date.now()}`,
       reportData: {
         ...reportData,
@@ -298,7 +299,6 @@ exports.generateReport = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Generate report error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -411,33 +411,24 @@ exports.getReportById = async (req, res) => {
 // @access  Private (Candidate only)
 exports.downloadReport = async (req, res) => {
   try {
-    const report = await Report.findOne({ 
-      reportId: req.params.id,
-      candidateId: req.user.id
-    });
+    // Search by _id (works for both HR and candidate)
+    const report = await Report.findById(req.params.id);
 
     if (!report) {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
-    if (report.status !== 'generated') {
-      return res.status(400).json({ success: false, message: 'Report is not ready for download' });
-    }
-
-    // Update download status
-    report.isDownloaded = true;
-    report.downloadedAt = new Date();
-    await report.save();
-
-    // If report has a file path, download it
+    // Send the PDF file
     if (report.filePath && fs.existsSync(report.filePath)) {
-      return res.download(report.filePath, report.fileName || 'report.pdf');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="BGV_Report_${report.candidateName}.pdf"`);
+      return res.download(report.filePath, report.fileName || `BGV_Report.pdf`);
     }
 
-    // If no file exists, generate PDF on the fly
-    const documents = await Document.find({ candidateId: req.user.id });
+    // Regenerate if file missing
+    const documents = await Document.find({ candidateId: report.candidateId });
     const reportData = {
-      candidateId: req.user.id,
+      candidateId: report.candidateId,
       candidateName: report.candidateName,
       candidateEmail: report.candidateEmail,
       position: report.reportData?.position || 'Not specified',
@@ -448,20 +439,19 @@ exports.downloadReport = async (req, res) => {
         uploadDate: doc.uploadDate,
         verifiedAt: doc.verifiedAt
       })),
-      finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
+      finalDecision: report.finalDecision || getFinalDecision(documents.map(d => ({ status: d.status })))
     };
 
     const { fileName, filePath } = await generatePDF(reportData);
-    
-    // Update report with file path
     report.filePath = filePath;
     report.fileName = fileName;
     await report.save();
 
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="BGV_Report_${report.candidateName}.pdf"`);
     return res.download(filePath, fileName);
 
   } catch (err) {
-    console.error('Download report error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

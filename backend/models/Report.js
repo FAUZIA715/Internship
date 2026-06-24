@@ -125,4 +125,4 @@ ReportSchema.index({ candidateId: 1, createdAt: -1 });
 ReportSchema.index({ status: 1 });
 ReportSchema.index({ reportId: 1 });
 
-module.exports = mongoose.model('Report', ReportSchema);
+module.exports = mongoose.models.Report || mongoose.model('Report', ReportSchema);

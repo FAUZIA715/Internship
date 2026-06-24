@@ -271,14 +271,17 @@ export const getDocumentHistory = async (candidateId) => {
 // ─── Module 3: Report APIs ───────────────────────────────────────
 
 export const generateReport = async (candidateId) => {
-  return await apiRequest('/reports/generate', {
-    method: 'POST',
-    body: JSON.stringify({ candidateId })
+  return await apiRequest(`/reports/generate/${candidateId}`, {
+    method: 'POST'
   });
 };
 
 export const getReportByCandidate = async (candidateId) => {
   return await apiRequest(`/reports/candidate/${candidateId}`);
+};
+
+export const getReports = async () => {
+  return await apiRequest('/reports');
 };
 
 export const getAllReports = async () => {
@@ -347,6 +350,7 @@ export const api = {
   
   // Reports
   generateReport,
+  getReports,
   getReportByCandidate,
   getAllReports,
   checkReportStatus,

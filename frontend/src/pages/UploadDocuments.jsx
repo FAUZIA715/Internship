@@ -117,9 +117,7 @@ const UploadDocuments = ({ user, onLogout }) => {
     try {
       for (const [docType, docData] of Object.entries(uploadedDocs)) {
         const docInfo = documentTypes.find(d => d.id === docType);
-        console.log('📤 Uploading:', docType, docData.file.name);
-        const result = await uploadDocument(docData.file, docType, docInfo.name);
-        console.log('✅ Upload result:', result);
+        await uploadDocument(docData.file, docType, docInfo.name);
       }
       
       showMessage('✅ All documents uploaded successfully! They will be verified by HR.', false);
@@ -128,7 +126,6 @@ const UploadDocuments = ({ user, onLogout }) => {
         navigate('/documents');
       }, 2000);
     } catch (error) {
-      console.error('❌ Upload error:', error);
       showMessage(error.message || '❌ Upload failed. Please try again.');
     } finally {
       setUploading(false);

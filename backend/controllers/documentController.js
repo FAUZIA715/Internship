@@ -1,9 +1,24 @@
-const Document = require('../models/Document');
+const Document = require('../models/document');
 const User = require('../models/User');
-const fs = require('fs');
+const { cloudinary } = require('../middleware/upload');
 const logHistory = require('../utils/historyLogger');
 
-// @desc    Upload document
+// ─── Helper: extract Cloudinary public_id from URL ────────────────
+const getPublicId = (url) => {
+  if (!url) return null;
+  try {
+    const parts = url.split('/');
+    const uploadIndex = parts.indexOf('upload');
+    if (uploadIndex === -1) return null;
+    // Skip version segment if present (v1234567890)
+    let startIndex = uploadIndex + 1;
+    if (parts[startIndex] && parts[startIndex].startsWith('v')) startIndex++;
+    const pathWithExt = parts.slice(startIndex).join('/');
+    return pathWithExt.replace(/\.[^/.]+$/, ''); // remove extension
+  } catch { return null; }
+};
+
+// ─── Upload Document ──────────────────────────────────────────────
 exports.uploadDocument = async (req, res) => {
   try {
     const { documentType, documentName } = req.body;
@@ -22,21 +37,22 @@ exports.uploadDocument = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a file' });
     }
 
+    // Cloudinary URL is in req.file.path
+    const cloudinaryUrl = req.file.path;
+    const fileName = req.file.filename || req.file.originalname;
+
     // Check for existing document
-    const existingDoc = await Document.findOne({ 
-      candidateId, 
-      documentType 
-    });
-    
+    const existingDoc = await Document.findOne({ candidateId, documentType });
+
     if (existingDoc) {
-      // Delete the old file
-      if (fs.existsSync(existingDoc.filePath)) {
-        fs.unlinkSync(existingDoc.filePath);
+      // Delete old file from Cloudinary
+      const oldPublicId = getPublicId(existingDoc.filePath);
+      if (oldPublicId) {
+        await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'raw' }).catch(() => {});
       }
-      
-      // Update the existing document instead of delete + create
-      existingDoc.filePath = req.file.path;
-      existingDoc.fileName = req.file.filename;
+
+      existingDoc.filePath = cloudinaryUrl;
+      existingDoc.fileName = fileName;
       existingDoc.fileSize = req.file.size;
       existingDoc.mimeType = req.file.mimetype;
       existingDoc.status = 'pending';
@@ -44,278 +60,203 @@ exports.uploadDocument = async (req, res) => {
       existingDoc.verifiedBy = null;
       existingDoc.verifiedAt = null;
       existingDoc.uploadDate = new Date();
-      
+
       await existingDoc.save();
-      
+
       await logHistory({
-        candidateId,
-        documentId: existingDoc._id,
-        documentType,
-        documentName,
-        action: 'UPDATED',
-        status: 'pending',
-        performedBy: req.user.id,
-        performedByRole: req.user.role,
-        performedByName: req.user.name,
-        details: `File updated: ${req.file.filename}`,
-        req
+        candidateId, documentId: existingDoc._id, documentType, documentName,
+        action: 'UPDATED', status: 'pending',
+        performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+        details: `File updated on Cloudinary`, req
       });
-      
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Document updated successfully', 
-        document: existingDoc 
-      });
+
+      return res.status(200).json({ success: true, message: 'Document updated successfully', document: existingDoc });
     }
 
     // Create new document
     const document = await Document.create({
-      candidateId,
-      documentType,
-      documentName: documentName,
-      filePath: req.file.path,
-      fileName: req.file.filename,
+      candidateId, documentType, documentName,
+      filePath: cloudinaryUrl,
+      fileName: fileName,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       status: 'pending'
     });
 
     await logHistory({
-      candidateId,
-      documentId: document._id,
-      documentType,
-      documentName,
-      action: 'UPLOADED',
-      status: 'pending',
-      performedBy: req.user.id,
-      performedByRole: req.user.role,
-      performedByName: req.user.name,
-      details: `File uploaded: ${req.file.filename}`,
-      req
+      candidateId, documentId: document._id, documentType, documentName,
+      action: 'UPLOADED', status: 'pending',
+      performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+      details: `File uploaded to Cloudinary`, req
     });
 
     res.status(201).json({ success: true, message: 'Document uploaded successfully', document });
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    console.error('Upload error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get all documents
+// ─── Get All Documents ────────────────────────────────────────────
 exports.getDocuments = async (req, res) => {
   try {
     let query = {};
-    
     if (req.user.role === 'candidate') {
       query.candidateId = req.user.id;
-      console.log('Query for candidate:', query);
     } else if (req.query.candidateId) {
       query.candidateId = req.query.candidateId;
     }
-
     const documents = await Document.find(query).populate('verifiedBy', 'name').sort({ uploadDate: -1 });
-    
-    console.log(`Found ${documents.length} documents for user ${req.user.id}`);
-    console.log('Documents:', documents);
-    
     res.status(200).json({ success: true, documents });
   } catch (err) {
-    console.error('Get documents error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get single document by ID
+// ─── Get Single Document ──────────────────────────────────────────
 exports.getDocumentById = async (req, res) => {
   try {
-    // Changed from documentId to _id for consistency with MongoDB
     const document = await Document.findById(req.params.id).populate('candidateId', 'name email');
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
-    
     if (req.user.role === 'candidate' && document.candidateId._id.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
     res.status(200).json({ success: true, document });
   } catch (err) {
-    console.error('Get document by ID error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Download document
+// ─── Download Document (redirect to Cloudinary URL) ──────────────
 exports.downloadDocument = async (req, res) => {
   try {
-    // Changed from documentId to _id for consistency
     const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
-    
     if (req.user.role === 'candidate' && document.candidateId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    
-    if (!fs.existsSync(document.filePath)) {
-      return res.status(404).json({ success: false, message: 'File not found' });
-    }
-    
+
     await logHistory({
-      candidateId: document.candidateId,
-      documentId: document._id,
-      documentType: document.documentType,
-      documentName: document.documentName,
-      action: 'VIEWED',
-      status: document.status,
-      performedBy: req.user.id,
-      performedByRole: req.user.role,
-      performedByName: req.user.name,
-      details: `Document downloaded`,
-      req
+      candidateId: document.candidateId, documentId: document._id,
+      documentType: document.documentType, documentName: document.documentName,
+      action: 'VIEWED', status: document.status,
+      performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+      details: 'Document viewed', req
     });
-    
-    res.download(document.filePath, document.fileName);
+
+    // Redirect to Cloudinary URL — accessible from any machine
+    res.redirect(document.filePath);
   } catch (err) {
-    console.error('Download error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Update document
+// ─── Update Document ──────────────────────────────────────────────
 exports.updateDocument = async (req, res) => {
   try {
-    // Changed from documentId to _id
     const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
-    
     if (document.candidateId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a new file' });
-    
+
+    // Delete old file from Cloudinary
+    const oldPublicId = getPublicId(document.filePath);
+    if (oldPublicId) {
+      await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'raw' }).catch(() => {});
+    }
+
     const previousStatus = document.status;
-    const oldFileName = document.fileName;
-    
-    if (fs.existsSync(document.filePath)) fs.unlinkSync(document.filePath);
-    
     document.filePath = req.file.path;
-    document.fileName = req.file.filename;
+    document.fileName = req.file.filename || req.file.originalname;
     document.fileSize = req.file.size;
     document.status = 'pending';
     document.rejectionReason = null;
     document.verifiedBy = null;
     document.verifiedAt = null;
     await document.save();
-    
+
     await logHistory({
-      candidateId: document.candidateId,
-      documentId: document._id,
-      documentType: document.documentType,
-      documentName: document.documentName,
-      action: 'UPDATED',
-      status: 'pending',
-      previousStatus,
-      performedBy: req.user.id,
-      performedByRole: req.user.role,
-      performedByName: req.user.name,
-      details: `Updated file: ${req.file.filename} (previous: ${oldFileName})`,
-      req
+      candidateId: document.candidateId, documentId: document._id,
+      documentType: document.documentType, documentName: document.documentName,
+      action: 'UPDATED', status: 'pending', previousStatus,
+      performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+      details: 'File updated on Cloudinary', req
     });
-    
+
     res.status(200).json({ success: true, message: 'Document updated successfully', document });
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    console.error('Update error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Delete document
+// ─── Delete Document ──────────────────────────────────────────────
 exports.deleteDocument = async (req, res) => {
   try {
-    // Changed from documentId to _id
     const document = await Document.findById(req.params.id);
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
-    
     if (req.user.role !== 'hr' && document.candidateId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    
+
+    // Delete from Cloudinary
+    const publicId = getPublicId(document.filePath);
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' }).catch(() => {});
+    }
+
     await logHistory({
-      candidateId: document.candidateId,
-      documentId: document._id,
-      documentType: document.documentType,
-      documentName: document.documentName,
-      action: 'DELETED',
-      status: document.status,
-      performedBy: req.user.id,
-      performedByRole: req.user.role,
-      performedByName: req.user.name,
-      details: `Document deleted`,
-      req
+      candidateId: document.candidateId, documentId: document._id,
+      documentType: document.documentType, documentName: document.documentName,
+      action: 'DELETED', status: document.status,
+      performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+      details: 'Document deleted from Cloudinary', req
     });
-    
-    if (fs.existsSync(document.filePath)) fs.unlinkSync(document.filePath);
+
     await Document.deleteOne({ _id: document._id });
-    
     res.status(200).json({ success: true, message: 'Document deleted successfully' });
   } catch (err) {
-    console.error('Delete error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Verify document (HR only)
+// ─── Verify Document (HR only) ────────────────────────────────────
 exports.verifyDocument = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
-    // Changed from documentId to _id
     const document = await Document.findById(req.params.id);
-    
     if (!document) return res.status(404).json({ success: false, message: 'Document not found' });
-    
-    const hrVerifiableTypes = ['degree', 'employment', 'address'];
-    if (req.user.role === 'hr' && !hrVerifiableTypes.includes(document.documentType)) {
-      return res.status(403).json({ success: false, message: 'HR can only verify degree, employment, and address proofs' });
-    }
-    
+
     if (!['verified', 'rejected'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Status must be "verified" or "rejected"' });
     }
-    
+
     const previousStatus = document.status;
-    
     document.status = status;
     if (status === 'rejected' && rejectionReason) document.rejectionReason = rejectionReason;
     document.verifiedBy = req.user.id;
     document.verifiedAt = new Date();
     await document.save();
-    
+
     await logHistory({
-      candidateId: document.candidateId,
-      documentId: document._id,
-      documentType: document.documentType,
-      documentName: document.documentName,
+      candidateId: document.candidateId, documentId: document._id,
+      documentType: document.documentType, documentName: document.documentName,
       action: status === 'verified' ? 'VERIFIED' : 'REJECTED',
-      status: status,
-      previousStatus,
-      performedBy: req.user.id,
-      performedByRole: req.user.role,
-      performedByName: req.user.name,
-      details: rejectionReason || `Document marked as ${status}`,
-      req
+      status, previousStatus,
+      performedBy: req.user.id, performedByRole: req.user.role, performedByName: req.user.name,
+      details: rejectionReason || `Document marked as ${status}`, req
     });
-    
+
     res.status(200).json({ success: true, message: `Document ${status} successfully`, document });
   } catch (err) {
-    console.error('Verify error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get all candidates with verification status (HR view)
+// ─── Get All Candidates Status (HR) ──────────────────────────────
 exports.getAllCandidatesStatus = async (req, res) => {
   try {
-    const candidates = await User.find({ role: 'candidate' }).select('_id name email phone address createdAt');
+    const candidates = await User.find({ role: 'candidate' }).select('_id name email phone createdAt');
     const candidateData = await Promise.all(candidates.map(async (candidate) => {
       const documents = await Document.find({ candidateId: candidate._id });
       const statusMap = {
@@ -323,58 +264,40 @@ exports.getAllCandidatesStatus = async (req, res) => {
         pan: documents.find(d => d.documentType === 'pan')?.status || 'not_uploaded',
         degree: documents.find(d => d.documentType === 'degree')?.status || 'not_uploaded',
         employment: documents.find(d => d.documentType === 'employment')?.status || 'not_uploaded',
-        address: documents.find(d => d.documentType === 'address')?.status || 'not_uploaded'
       };
-      const allVerified = ['aadhaar', 'pan', 'degree', 'employment', 'address'].every(
-        type => statusMap[type] === 'verified'
-      );
-      return {
-        ...candidate.toObject(),
-        documents: statusMap,
-        overallStatus: allVerified ? 'verified' : 'pending',
-        documentsList: documents
-      };
+      const allVerified = Object.values(statusMap).every(s => s === 'verified');
+      return { ...candidate.toObject(), documents: statusMap, overallStatus: allVerified ? 'verified' : 'pending' };
     }));
     res.status(200).json({ success: true, candidates: candidateData });
   } catch (err) {
-    console.error('Get all candidates status error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get candidate details with documents (HR view)
+// ─── Get Candidate Details (HR) ───────────────────────────────────
 exports.getCandidateDetails = async (req, res) => {
   try {
     const { candidateId } = req.params;
     const candidate = await User.findById(candidateId).select('-password');
     if (!candidate) return res.status(404).json({ success: false, message: 'Candidate not found' });
-    
     const documents = await Document.find({ candidateId }).sort({ uploadDate: -1 });
     res.status(200).json({ success: true, candidate, documents });
   } catch (err) {
-    console.error('Get candidate details error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get document history for a candidate
+// ─── Get Document History ─────────────────────────────────────────
 exports.getDocumentHistory = async (req, res) => {
   try {
     const { candidateId } = req.params;
     const History = require('../models/History');
-    
-    // Check authorization
     if (req.user.role === 'candidate' && candidateId !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    
-    const history = await History.find({ candidateId })
-      .populate('performedBy', 'name email role')
-      .sort({ timestamp: -1 });
-    
+    const history = await History.find({ candidateId }).sort({ timestamp: -1 });
     res.status(200).json({ success: true, history });
   } catch (err) {
-    console.error('Get history error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

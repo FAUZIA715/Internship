@@ -94,7 +94,7 @@ const Dashboard = ({ user, onLogout }) => {
   const goToUpload = () => navigate('/upload');
   const goToDocuments = () => navigate('/documents');
   const goToVerificationStatus = () => navigate('/verification-status');
-  const goToReports = () => navigate('/verification-status');
+  const goToReports = () => navigate('/reports');
 
   // Format date for history
   const formatDate = (dateString) => {
