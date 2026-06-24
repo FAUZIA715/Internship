@@ -201,7 +201,7 @@ const CandidateReports = ({ user, onLogout }) => {
                 <div className="report-actions">
                   {report.status === 'generated' ? (
                     <button 
-                      onClick={() => handleDownload(report.reportId)} 
+                      onClick={() => handleDownload(report._id)} 
                       className="btn-download"
                       disabled={downloading}
                     >

@@ -51,15 +51,18 @@ const ViewDocuments = ({ user, onLogout }) => {
 
   // View document - Use _id for API calls
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewOriginalUrl, setPreviewOriginalUrl] = useState(null);
 
   const viewDocument = async (doc) => {
-    if (doc.filePath && doc.filePath.startsWith('http')) {
-      // Use Google Docs viewer to display PDF inline — works on any browser
-      const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(doc.filePath)}&embedded=true`;
-      setPreviewUrl(googleViewerUrl);
+    if (!doc.filePath || !doc.filePath.startsWith('http')) {
+      alert('Document not available. Please re-upload.');
       return;
     }
-    alert('This document was uploaded before Cloudinary integration. Please re-upload it.');
+    // Transform Cloudinary raw URL to use Google Docs viewer
+    const url = doc.filePath;
+    const googleViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    setPreviewUrl(googleViewer);
+    setPreviewOriginalUrl(url);
   };
 
   // Delete document - Use _id for API calls
@@ -296,8 +299,8 @@ const ViewDocuments = ({ user, onLogout }) => {
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600, color: '#1f2937' }}>Document Preview</span>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <a href={previewUrl.replace('https://docs.google.com/viewer?url=', '').replace('&embedded=true', '').split('?')[0]} target="_blank" rel="noreferrer" style={{ padding: '6px 14px', background: '#667eea', color: 'white', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>⬇️ Download</a>
-                  <button onClick={() => setPreviewUrl(null)} style={{ padding: '6px 14px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>✕ Close</button>
+                  <a href={previewOriginalUrl} target="_blank" rel="noreferrer" download style={{ padding: '6px 14px', background: '#667eea', color: 'white', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>⬇️ Download</a>
+                  <button onClick={() => { setPreviewUrl(null); setPreviewOriginalUrl(null); }} style={{ padding: '6px 14px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>✕ Close</button>
                 </div>
               </div>
               <iframe src={previewUrl} style={{ flex: 1, border: 'none', width: '100%' }} title="Document Preview" />

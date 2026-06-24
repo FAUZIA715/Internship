@@ -12,15 +12,14 @@ const {
 
 // ─── HR Routes ────────────────────────────────────────────────────
 router.post('/generate/:candidateId', protect, authorize('hr'), generateReport);
-router.get('/candidates', protect, authorize('hr'), getCandidatesReportStatus);
+router.get('/hr/candidates', protect, authorize('hr'), getCandidatesReportStatus);
 
-// ─── Shared Routes (both HR and candidate) ────────────────────────
+// ─── Shared Routes ────────────────────────────────────────────────
 router.get('/download/:id', protect, downloadReport);
-router.get('/candidate/:candidateId', protect, getReportById);
-router.get('/:id', protect, getReportById);
 
 // ─── Candidate Routes ─────────────────────────────────────────────
-router.get('/', protect, authorize('candidate'), getReports);
-router.get('/check', protect, authorize('candidate'), checkReportStatus);
+router.get('/check', protect, checkReportStatus);
+router.get('/my-reports', protect, getReports);
+router.get('/:id', protect, getReportById);
 
 module.exports = router;

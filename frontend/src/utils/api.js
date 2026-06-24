@@ -281,7 +281,7 @@ export const getReportByCandidate = async (candidateId) => {
 };
 
 export const getReports = async () => {
-  return await apiRequest('/reports');
+  return await apiRequest('/reports/my-reports');
 };
 
 export const getAllReports = async () => {

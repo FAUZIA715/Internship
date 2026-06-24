@@ -38,15 +38,16 @@ const getStatusBadge = (status) => {
 
 // ─── Helper: Get final decision ──────────────────────────────────
 const getFinalDecision = (documents) => {
-  const statuses = documents.map(d => d.status);
-  if (statuses.some(s => s === 'rejected')) return 'Not Clear';
-  if (statuses.every(s => s === 'verified')) return 'Clear';
+  const required = ['aadhaar', 'pan', 'degree', 'employment'];
+  const docs = documents.filter(d => required.includes(d.documentType));
+  if (docs.some(d => d.status === 'rejected')) return 'Not Clear';
+  if (docs.length === 4 && docs.every(d => d.status === 'verified')) return 'Clear';
   return 'Pending';
 };
 
 // ─── Generate PDF from HTML ───────────────────────────────────────
 const generatePDF = async (reportData) => {
-  const docTypes = ['aadhaar', 'pan', 'degree', 'employment', 'address'];
+  const docTypes = ['aadhaar', 'pan', 'degree', 'employment'];
   const decision = reportData.finalDecision;
 
   const decisionColors = {
@@ -205,47 +206,13 @@ exports.generateReport = async (req, res) => {
     if (!allVerified || anyRejected) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot generate report. All documents must be verified.',
+        message: 'Cannot generate report. All 4 required documents (Aadhaar, PAN, Degree, Employment) must be verified.',
         docStatus
       });
     }
 
-    // Check if report already exists
-    const existingReport = await Report.findOne({ 
-      candidateId, 
-      status: 'generated' 
-    });
-
-    if (existingReport) {
-      // If report exists but no PDF, generate it
-      if (!existingReport.filePath || !fs.existsSync(existingReport.filePath)) {
-        const reportData = {
-          candidateId: candidate._id,
-          candidateName: candidate.name,
-          candidateEmail: candidate.email,
-          position: candidate.position || 'Not specified',
-          generatedByName: req.user.name,
-          documents: documents.map(doc => ({
-            documentType: doc.documentType,
-            status: doc.status,
-            uploadDate: doc.uploadDate,
-            verifiedAt: doc.verifiedAt
-          })),
-          finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
-        };
-
-        const { fileName, filePath } = await generatePDF(reportData);
-        existingReport.fileName = fileName;
-        existingReport.filePath = filePath;
-        await existingReport.save();
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Report already generated',
-        report: existingReport
-      });
-    }
+    // Delete any existing report and regenerate fresh
+    await Report.deleteOne({ candidateId });
 
     // Generate report data for PDF
     const reportData = {
@@ -260,7 +227,7 @@ exports.generateReport = async (req, res) => {
         uploadDate: doc.uploadDate,
         verifiedAt: doc.verifiedAt
       })),
-      finalDecision: getFinalDecision(documents.map(d => ({ status: d.status })))
+      finalDecision: getFinalDecision(documents)
     };
 
     // Generate PDF
@@ -364,18 +331,14 @@ exports.getCandidatesReportStatus = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const reports = await Report.find({ 
-      candidateId: req.user.id 
-    })
-    .populate('generatedBy', 'name email')
-    .sort({ createdAt: -1 });
+      candidateId: req.user.id
+    }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       reports
     });
-
   } catch (err) {
-    console.error('Get reports error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
