@@ -1,25 +1,18 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../utils/api';
 
 function CandidateLogin() {
+  const _token = localStorage.getItem('token');
+  const _role = localStorage.getItem('role');
+  if (_token && _role === 'candidate') { window.location.replace('/candidate/dashboard'); return null; }
+  if (_token && _role === 'hr') { window.location.replace('/hr/dashboard'); return null; }
+
+  const [role, setRole] = useState('candidate');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: true, visible: false });
-
-  // Check for existing session and redirect appropriately
-  const _token = localStorage.getItem('token');
-  const _role = localStorage.getItem('role');
-  if (_token && _role === 'candidate') { 
-    window.location.replace('/candidate/dashboard'); 
-    return null; 
-  }
-  if (_token && _role === 'hr') { 
-    window.location.replace('/hr/dashboard'); 
-    return null; 
-  }
 
   const showMsg = (text, isError = true) => {
     setMessage({ text, isError, visible: true });
@@ -29,36 +22,25 @@ function CandidateLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const data = await api.login({ email, password, portalRole: 'candidate' });
-      
+      const data = await api.login({ email, password, portalRole: role });
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.user.role);
-        localStorage.setItem('user', JSON.stringify({
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: data.user.role,
-          isFirstLogin: data.isFirstLogin
-        }));
-        
+        localStorage.setItem('user', JSON.stringify(data.user));
         showMsg('Login successful! Redirecting...', false);
-        
         setTimeout(() => {
-          if (data.isFirstLogin) {
-            window.location.href = '/candidate/change-password';
+          if (role === 'hr') {
+            window.location.href = data.isFirstLogin ? '/hr/change-password' : '/hr/dashboard';
           } else {
-            window.location.href = '/candidate/dashboard';
+            window.location.href = data.isFirstLogin ? '/candidate/change-password' : '/candidate/dashboard';
           }
         }, 1000);
       } else {
-        showMsg(data.message || 'Invalid credentials');
+        showMsg(data.message);
       }
     } catch (err) {
-      console.error('❌ Candidate Login error:', err);
-      showMsg(err.message || 'Connection error. Please try again.');
+      showMsg(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,252 +50,99 @@ function CandidateLogin() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1rem',
-      fontFamily: "'Inter', system-ui, sans-serif"
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '1rem', fontFamily: "'Inter', system-ui, sans-serif",
+      position: 'relative', overflow: 'hidden'
     }}>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '999px',
-            padding: '6px 16px'
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#34d399'
-            }}></div>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'white',
-              letterSpacing: '1px'
-            }}>
-              CANDIDATE PORTAL
-            </span>
+      <style>{`
+        @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}
+        .role-btn:hover{background:rgba(255,255,255,0.15)!important;}
+        .sign-btn:hover{transform:translateY(-2px)!important;box-shadow:0 8px 28px rgba(0,0,0,0.25)!important;}
+        .inp:focus{border-color:rgba(255,255,255,0.7)!important;background:rgba(255,255,255,0.18)!important;}
+        .fp:hover{text-decoration:underline!important;opacity:1!important;}
+      `}</style>
+
+      {/* BG decoration */}
+      <div style={{ position: 'absolute', top: -120, right: -120, width: 350, height: 350, background: 'rgba(255,255,255,0.06)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
+      <div style={{ position: 'absolute', bottom: -120, left: -120, width: 350, height: 350, background: 'rgba(255,255,255,0.06)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
+      <div style={{ position: 'absolute', top: '40%', left: '10%', width: 200, height: 200, background: 'rgba(255,255,255,0.04)', borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
+
+      <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 1, animation: 'fadeIn 0.5s ease' }}>
+
+        {/* LOGO */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ width: 70, height: 70, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '2px solid rgba(255,255,255,0.3)', borderRadius: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+            <span style={{ fontSize: 32 }}>🛡️</span>
           </div>
+          <h1 style={{ color: 'white', fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.5px', textShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>VeriFlow</h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: 14 }}>Background Verification System</p>
         </div>
 
-        <div style={{
-          background: 'white',
-          borderRadius: '1.5rem',
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-          padding: '2rem'
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              background: 'linear-gradient(135deg, #667eea, #764ba2)',
-              borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              boxShadow: '0 8px 16px rgba(102,126,234,0.4)'
-            }}>
-              <i className="fas fa-user-circle" style={{ fontSize: '28px', color: 'white' }}></i>
-            </div>
-            <h1 style={{
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#1f2937',
-              margin: '0 0 4px'
-            }}>
-              Candidate Login
-            </h1>
-            <p style={{
-              fontSize: '13px',
-              color: '#6b7280',
-              margin: 0
-            }}>
-              VeriFlow Background Verification
-            </p>
+        {/* CARD */}
+        <div style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '1.75rem', padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+
+          {/* ROLE TOGGLE */}
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.15)', borderRadius: 14, padding: 4, marginBottom: '1.75rem', gap: 4 }}>
+            {['candidate', 'hr'].map(r => (
+              <button key={r} type="button" className="role-btn" onClick={() => setRole(r)}
+                style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 11, cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', letterSpacing: 0.3,
+                  background: role === r ? 'rgba(255,255,255,0.95)' : 'transparent',
+                  color: role === r ? '#667eea' : 'rgba(255,255,255,0.65)',
+                  boxShadow: role === r ? '0 4px 16px rgba(0,0,0,0.15)' : 'none',
+                  transform: role === r ? 'scale(1.02)' : 'scale(1)',
+                }}>
+                {r === 'candidate' ? '👤 Candidate' : '🏢 HR Manager'}
+              </button>
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
+          <h2 style={{ color: 'white', fontSize: 21, fontWeight: 700, margin: '0 0 4px', textAlign: 'center', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>Welcome Back</h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, margin: '0 0 1.5rem', textAlign: 'center' }}>
+            Sign in as {role === 'hr' ? 'HR Manager' : 'Candidate'}
+          </p>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="Enter your email"
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s'
-                }}
-                onFocus={e => e.target.style.borderColor = '#667eea'}
-                onBlur={e => e.target.style.borderColor = '#d1d5db'}
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.7 }}>Email Address</label>
+              <input className="inp" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Enter your email"
+                style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 12, fontSize: 14, outline: 'none', color: 'white', boxSizing: 'border-box', transition: 'all 0.2s' }}
               />
             </div>
 
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#374151',
-                marginBottom: '6px'
-              }}>
-                Password
-              </label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.7 }}>Password</label>
               <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  style={{
-                    width: '100%',
-                    padding: '10px 40px 10px 14px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    transition: 'border-color 0.2s'
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#667eea'}
-                  onBlur={e => e.target.style.borderColor = '#d1d5db'}
+                <input className="inp" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password"
+                  style={{ width: '100%', padding: '12px 44px 12px 16px', background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 12, fontSize: 14, outline: 'none', color: 'white', boxSizing: 'border-box', transition: 'all 0.2s' }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '4px'
-                  }}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <i className={`fas ${showPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>
+                  {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
 
-            <div style={{
-              textAlign: 'right',
-              marginTop: '-4px'
-            }}>
-              <Link
-                to="/candidate/forgot-password"
-                style={{
-                  fontSize: '13px',
-                  color: '#667eea',
-                  textDecoration: 'none',
-                  fontWeight: 500
-                }}
-              >
+            <div style={{ textAlign: 'right', marginTop: -4 }}>
+              <a href={`/${role}/forgot-password`} className="fp" style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 600, transition: 'all 0.2s' }}>
                 Forgot password?
-              </Link>
+              </a>
             </div>
 
             {message.visible && (
-              <div style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                background: message.isError ? '#fee2e2' : '#dcfce7',
-                color: message.isError ? '#991b1b' : '#166534',
-                border: `1px solid ${message.isError ? '#fecaca' : '#bbf7d0'}`
-              }}>
+              <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 500, background: message.isError ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)', color: message.isError ? '#fecaca' : '#bbf7d0', border: `1px solid ${message.isError ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'}`, backdropFilter: 'blur(8px)' }}>
                 {message.text}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '11px',
-                background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea, #764ba2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'background 0.3s',
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin"></i>
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-sign-in-alt"></i>
-                  Sign In
-                </>
-              )}
+            <button type="submit" className="sign-btn" disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)', color: loading ? 'rgba(255,255,255,0.5)' : '#667eea', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 20px rgba(0,0,0,0.15)', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)', letterSpacing: 0.3, marginTop: 4 }}>
+              {loading ? '⏳ Signing in...' : 'Sign In →'}
             </button>
+
           </form>
 
-          <div style={{
-            textAlign: 'center',
-            marginTop: '20px',
-            paddingTop: '20px',
-            borderTop: '1px solid #f3f4f6'
-          }}>
-            <p style={{
-              fontSize: '12px',
-              color: '#9ca3af'
-            }}>
-              Are you an HR?{' '}
-              <Link
-                to="/hr/login"
-                style={{
-                  color: '#667eea',
-                  fontWeight: 600,
-                  textDecoration: 'none'
-                }}
-              >
-                HR Portal →
-              </Link>
-            </p>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0 }}>© 2026 VeriFlow BGV System · Aibi Tech</p>
           </div>
         </div>
       </div>

@@ -108,8 +108,8 @@ function App() {
         {/* ── Module 1: Auth ── */}
         <Route path="/candidate/login" element={<CandidateLogin />} />
         <Route path="/hr/login" element={<HRLogin />} />
-        <Route path="/candidate/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/hr/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/candidate/forgot-password" element={<ForgotPasswordPage portalRole="candidate" />} />
+        <Route path="/hr/forgot-password" element={<ForgotPasswordPage portalRole="hr" />} />
         <Route path="/candidate/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/hr/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/candidate/change-password" element={<ChangePasswordPage />} />

@@ -58,10 +58,10 @@ const ViewDocuments = ({ user, onLogout }) => {
       alert('Document not available. Please re-upload.');
       return;
     }
-    // Transform Cloudinary raw URL to use Google Docs viewer
     const url = doc.filePath;
-    const googleViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    setPreviewUrl(googleViewer);
+    // Use Mozilla PDF.js viewer — reliable on all browsers
+    const pdfViewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
+    setPreviewUrl(pdfViewerUrl);
     setPreviewOriginalUrl(url);
   };
 

@@ -1,310 +1,203 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { clearSession } from '../utils/api';
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+const HRDashboard = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const [candidates, setCandidates] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, departments: [] });
+  const [loading, setLoading] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-.hr-dashboard {
-  width: 100%;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%);
-  font-family: 'Poppins', sans-serif;
-  padding: 20px;
-}
+  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const h = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
-/* Header */
-.dashboard-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 16px 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/hr/candidates', { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+      setCandidates(data);
+      const total = data.length;
+      const allV = (c) => ['aadhaar','pan','degree','employment'].every(k => c[`${k}Status`] === 'verified');
+      const anyR = (c) => ['aadhaar','pan','degree','employment'].some(k => c[`${k}Status`] === 'rejected');
+      const approved = data.filter(c => allV(c)).length;
+      const rejected = data.filter(c => anyR(c)).length;
+      const pending = total - approved - rejected;
+      const departments = [
+        { name: 'Engineering', icon: '⚙️', count: data.filter(c => c.position?.toLowerCase().includes('engineer') || c.position?.toLowerCase().includes('developer')).length },
+        { name: 'Product', icon: '📦', count: data.filter(c => c.position?.toLowerCase().includes('product')).length },
+        { name: 'Design', icon: '🎨', count: data.filter(c => c.position?.toLowerCase().includes('design')).length },
+        { name: 'Sales', icon: '💼', count: data.filter(c => c.position?.toLowerCase().includes('sales')).length },
+        { name: 'Marketing', icon: '📣', count: data.filter(c => c.position?.toLowerCase().includes('marketing')).length },
+      ];
+      setStats({ total, pending, approved, rejected, departments });
+    } catch (e) {}
+    finally { setLoading(false); }
+  };
 
-.logo-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+  const handleLogout = () => { clearSession(); if (onLogout) onLogout(); window.location.href = '/candidate/login'; };
 
-.logo-icon-small {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 20px;
-}
+  const getStatus = (c) => {
+    const allV = ['aadhaar','pan','degree','employment'].every(k => c[`${k}Status`] === 'verified');
+    const anyR = ['aadhaar','pan','degree','employment'].some(k => c[`${k}Status`] === 'rejected');
+    if (allV) return { label: 'Approved', color: '#059669', bg: '#d1fae5', border: '#a7f3d0' };
+    if (anyR) return { label: 'Rejected', color: '#dc2626', bg: '#fee2e2', border: '#fecaca' };
+    return { label: 'Pending', color: '#d97706', bg: '#fef3c7', border: '#fde68a' };
+  };
 
-.logo-wrapper {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
+  const statCards = [
+    { label: 'Total', value: stats.total, icon: '👥', bg: '#d1fae5', border: '#a7f3d0', color: '#059669', filter: 'all' },
+    { label: 'Pending', value: stats.pending, icon: '⏳', bg: '#fef3c7', border: '#fde68a', color: '#d97706', filter: 'pending' },
+    { label: 'Approved', value: stats.approved, icon: '✅', bg: '#d1fae5', border: '#a7f3d0', color: '#059669', filter: 'approved' },
+    { label: 'Rejected', value: stats.rejected, icon: '❌', bg: '#fee2e2', border: '#fecaca', color: '#dc2626', filter: 'rejected' },
+  ];
 
-.logo-brand {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
-}
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui" }}>
+      <div style={{ textAlign: 'center', color: 'white' }}>
+        <div style={{ width: 48, height: 48, border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Loading dashboard...</p>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </div>
+  );
 
-.logo-divider {
-  font-size: 18px;
-  color: #cbd5e1;
-  font-weight: 300;
-}
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)', padding: 'clamp(1rem,3vw,1.5rem)', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+        .sc:hover{transform:translateY(-6px) scale(1.02)!important;box-shadow:0 20px 40px rgba(0,0,0,0.15)!important;}
+        .cc:hover{background:#f0fdf4!important;transform:translateX(4px)!important;}
+        .dpt:hover{transform:translateY(-4px)!important;box-shadow:0 8px 20px rgba(0,0,0,0.1)!important;border-color:#059669!important;}
+        .ddi:hover{background:#f0fdf4!important;color:#059669!important;}
+        .nb:hover{box-shadow:0 0 0 2px #05966944!important;}
+        .va:hover{background:linear-gradient(135deg,#059669,#065f46)!important;color:white!important;}
+        @media(max-width:900px){.sg{grid-template-columns:1fr 1fr!important;}.dg{grid-template-columns:repeat(3,1fr)!important;}}
+        @media(max-width:480px){.dg{grid-template-columns:1fr 1fr!important;}}
+      `}</style>
+      <div style={{ maxWidth: 1100, margin: '0 auto', animation: 'slideUp 0.45s ease' }}>
 
-.logo-workspace {
-  font-size: 16px;
-  font-weight: 500;
-  color: #6b7280;
-}
+        {/* NAVBAR */}
+        <div style={{ background: 'white', borderRadius: '1.5rem', padding: 'clamp(0.75rem,2vw,1rem) clamp(1rem,3vw,2rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', boxShadow: '0 8px 32px rgba(5,150,105,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #059669, #065f46)', borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 4px 12px rgba(5,150,105,0.4)' }}>🛡️</div>
+            <div>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#1f2937', letterSpacing: '-0.5px' }}>VeriFlow</span>
+              <span style={{ fontSize: 11, color: '#9ca3af', display: 'block', lineHeight: 1.2 }}>HR Workspace</span>
+            </div>
+          </div>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
+            <div onClick={() => setDropdownOpen(!dropdownOpen)} className="nb" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 14px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: 'white', transition: 'all 0.2s' }}>
+              <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #059669, #065f46)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, boxShadow: '0 2px 8px rgba(5,150,105,0.4)' }}>{user?.name?.charAt(0).toUpperCase()}</div>
+              <div>
+                <p style={{ fontWeight: 700, color: '#1f2937', margin: 0, fontSize: 13 }}>{user?.name || 'HR'}</p>
+                <p style={{ fontSize: 10, color: '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>HR Manager</p>
+              </div>
+              <span style={{ color: '#6ee7b7', fontSize: 10, transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none', fontWeight: 700 }}>▼</span>
+            </div>
+            {dropdownOpen && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, background: 'white', border: '1.5px solid #e5e7eb', borderRadius: 18, minWidth: 220, padding: '8px 0', zIndex: 1000, boxShadow: '0 24px 56px rgba(5,150,105,0.18)', animation: 'slideUp 0.15s ease' }}>
+                {[
+                  { label: '👥 All Candidates', action: () => navigate('/candidates-list?filter=all') },
+                  { label: '⏳ Pending Review', action: () => navigate('/candidates-list?filter=pending') },
+                  { label: '✅ Approved', action: () => navigate('/candidates-list?filter=approved') },
+                ].map((item, i) => (
+                  <button key={i} className="ddi" onClick={() => { item.action(); setDropdownOpen(false); }} style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', fontSize: 13, color: '#374151', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontWeight: 500 }}>{item.label}</button>
+                ))}
+                <div style={{ height: 1, background: '#f3f4f6', margin: '6px 12px' }}></div>
+                <button className="ddi" onClick={handleLogout} style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', fontSize: 13, color: '#dc2626', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontWeight: 500 }}>🚪 Logout</button>
+              </div>
+            )}
+          </div>
+        </div>
 
-.user-area {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
+        {/* WELCOME */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem,4vw,2rem)', fontWeight: 800, color: 'white', margin: '0 0 6px', letterSpacing: '-0.5px', textShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
+            Good day, {user?.name?.split(' ')[0]} 👋
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 14 }}>Manage candidate verifications and generate BGV reports</p>
+        </div>
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: #f8fafc;
-  border-radius: 50px;
-}
+        {/* STAT CARDS */}
+        <div className="sg" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+          {statCards.map((s, i) => (
+            <div key={i} className="sc" onClick={() => navigate(`/candidates-list?filter=${s.filter}`)}
+              style={{ background: 'white', borderRadius: '1.25rem', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', cursor: 'pointer', borderTop: `3px solid ${s.border}` }}>
+              <div style={{ width: 52, height: 52, background: s.bg, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{s.icon}</div>
+              <div>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>{s.label}</p>
+                <p style={{ fontSize: 30, fontWeight: 800, color: s.color, margin: 0, lineHeight: 1, letterSpacing: '-1.5px' }}>{s.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
-.user-info i {
-  font-size: 40px;
-  color: #3b82f6;
-}
+        {/* DEPARTMENTS */}
+        <div style={{ background: 'white', borderRadius: '1.5rem', padding: 'clamp(1rem,3vw,1.5rem)', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <h3 style={{ color: '#1f2937', fontWeight: 700, fontSize: 15, margin: '0 0 1rem' }}>🏢 Departments</h3>
+          <div className="dg" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.75rem' }}>
+            {stats.departments.map((d, i) => (
+              <div key={i} className="dpt" onClick={() => navigate('/candidates-list?filter=all')}
+                style={{ background: '#f0fdf4', border: '1.5px solid #d1fae5', borderRadius: 14, padding: '0.875rem 0.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                <div style={{ fontSize: 24, marginBottom: 6 }}>{d.icon}</div>
+                <p style={{ fontWeight: 600, color: '#1f2937', margin: '0 0 2px', fontSize: 12 }}>{d.name}</p>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{d.count} candidates</p>
+              </div>
+            ))}
+            <div className="dpt" onClick={() => navigate('/candidates-list?filter=all')}
+              style={{ background: 'linear-gradient(135deg, #05996915, #065f4615)', border: '1.5px solid #a7f3d0', borderRadius: 14, padding: '0.875rem 0.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}>
+              <div style={{ fontSize: 24, marginBottom: 6 }}>👁️</div>
+              <p style={{ fontWeight: 700, color: '#059669', margin: '0 0 2px', fontSize: 12 }}>View All</p>
+              <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{stats.total} total</p>
+            </div>
+          </div>
+        </div>
 
-.user-name {
-  font-weight: 600;
-  color: #1e293b;
-}
+        {/* RECENT CANDIDATES */}
+        <div style={{ background: 'white', borderRadius: '1.5rem', padding: 'clamp(1rem,3vw,1.5rem)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.875rem', borderBottom: '2px solid #f0fdf4' }}>
+            <h3 style={{ color: '#1f2937', fontWeight: 700, fontSize: 15, margin: 0 }}>👤 Recent Candidates</h3>
+            <button className="va" onClick={() => navigate('/candidates-list?filter=all')} style={{ padding: '6px 16px', background: 'white', border: '1.5px solid #a7f3d0', borderRadius: 10, color: '#059669', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'all 0.2s' }}>View All →</button>
+          </div>
+          {candidates.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+              <p style={{ margin: 0, fontSize: 14 }}>No candidates yet</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {candidates.slice(0, 5).map((c, i) => {
+                const st = getStatus(c);
+                return (
+                  <div key={i} className="cc" onClick={() => navigate(`/candidate-details/${c._id}`)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f9fafb', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s', borderLeft: '3px solid #a7f3d0', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 36, height: 36, background: 'linear-gradient(135deg, #059669, #065f46)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{c.name?.charAt(0).toUpperCase()}</div>
+                      <div>
+                        <p style={{ fontWeight: 700, color: '#1f2937', margin: 0, fontSize: 13 }}>{c.name}</p>
+                        <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>{c.email} · {c.position || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>{st.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-.user-role {
-  font-size: 12px;
-  color: #64748b;
-}
+      </div>
+    </div>
+  );
+};
 
-.logout-btn {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.logout-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-}
-
-/* Welcome Section */
-.welcome-section {
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d6a4f 100%);
-  border-radius: 24px;
-  padding: 40px;
-  color: white;
-  margin-bottom: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-
-.welcome-section h1 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  width: 55px;
-  height: 55px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.stat-card.total .stat-icon { background: #dbeafe; color: #3b82f6; }
-.stat-card.pending .stat-icon { background: #fef3c7; color: #f59e0b; }
-.stat-card.approved .stat-icon { background: #dcfce7; color: #10b981; }
-.stat-card.rejected .stat-icon { background: #fee2e2; color: #ef4444; }
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-/* Departments Section */
-.departments-section {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 30px;
-}
-
-.departments-section h3 {
-  font-size: 18px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.departments-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-}
-
-.dept-card {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dept-card:hover {
-  background: #e0e7ff;
-  transform: translateY(-2px);
-}
-
-.dept-name {
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.dept-count {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-.dept-card.view-all {
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  color: white;
-}
-
-.dept-card.view-all .dept-name,
-.dept-card.view-all .dept-count {
-  color: white;
-}
-
-/* Action Buttons */
-.action-buttons-group {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.action-btn {
-  padding: 10px 20px;
-  border-radius: 40px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.action-btn.primary {
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  color: white;
-}
-
-.action-btn.secondary {
-  background: white;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.loading-container {
-  text-align: center;
-  padding: 60px;
-  color: white;
-  font-size: 18px;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .dashboard-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-  .logo-wrapper {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .departments-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+export default HRDashboard;

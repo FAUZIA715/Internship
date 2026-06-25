@@ -1,723 +1,153 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { getReports, downloadReport, checkReportStatus, logout } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import { getReports, downloadReport, logout } from '../utils/api';
 
 const CandidateReports = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [hasReport, setHasReport] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  useEffect(() => { fetchReports(); }, []);
   useEffect(() => {
-    fetchReports();
-  }, []);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const h = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, []);
 
   const fetchReports = async () => {
     try {
-      setLoading(true);
       const data = await getReports();
-      if (data.success) {
-        setReports(data.reports || []);
-        setHasReport(data.reports && data.reports.length > 0);
-      }
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    } finally {
-      setLoading(false);
-    }
+      if (data.success) setReports(data.reports || []);
+    } catch (e) {}
+    finally { setLoading(false); }
   };
 
-  const handleLogout = () => {
-    logout();
-    if (onLogout) onLogout();
-    navigate('/candidate/login');
-  };
-
-  const goToDashboard = () => navigate('/candidate/dashboard');
-  const goToProfile = () => navigate('/profile');
-  const goToResetPassword = () => navigate('/candidate/change-password');
+  const handleLogout = () => { logout(); if (onLogout) onLogout(); window.location.href = '/candidate/login'; };
 
   const handleDownload = async (reportId) => {
-    try {
-      setDownloading(true);
-      await downloadReport(reportId);
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('Failed to download report: ' + error.message);
-    } finally {
-      setDownloading(false);
-    }
+    try { setDownloading(true); await downloadReport(reportId); }
+    catch (e) { alert('Download failed: ' + e.message); }
+    finally { setDownloading(false); }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+  const getDecisionStyle = (d) => {
+    if (d === 'Clear') return { bg: '#d1fae5', color: '#059669', border: '#a7f3d0', icon: '✅' };
+    if (d === 'Not Clear') return { bg: '#fee2e2', color: '#dc2626', border: '#fecaca', icon: '❌' };
+    return { bg: '#fef3c7', color: '#d97706', border: '#fde68a', icon: '⏳' };
   };
 
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'generated':
-        return <span className="badge-success"><i className="fas fa-check-circle"></i> Generated</span>;
-      case 'pending':
-        return <span className="badge-pending"><i className="fas fa-clock"></i> Pending</span>;
-      case 'failed':
-        return <span className="badge-danger"><i className="fas fa-times-circle"></i> Failed</span>;
-      default:
-        return <span className="badge-pending">Pending</span>;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="page-loading">
-        <i className="fas fa-spinner fa-spin"></i> Loading...
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui" }}>
+      <div style={{ textAlign: 'center', color: 'white' }}>
+        <div style={{ width: 48, height: 48, border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Loading reports...</p>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="page-wrapper">
-      <div className="page-container">
-        {/* ====== NAVBAR ====== */}
-        <div className="page-navbar">
-          <div className="navbar-brand">
-            <div className="brand-icon">
-              <i className="fas fa-shield-alt"></i>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: 'clamp(1rem,3vw,1.5rem)', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+        .rc:hover{transform:translateY(-4px)!important;box-shadow:0 16px 40px rgba(0,0,0,0.12)!important;}
+        .dl-btn:hover{transform:scale(1.04)!important;box-shadow:0 8px 24px rgba(102,126,234,0.4)!important;}
+        .ddi:hover{background:#f5f3ff!important;color:#667eea!important;}
+        .nb:hover{box-shadow:0 0 0 2px #667eea44!important;}
+      `}</style>
+      <div style={{ maxWidth: 900, margin: '0 auto', animation: 'slideUp 0.45s ease' }}>
+
+        {/* NAVBAR */}
+        <div style={{ background: 'white', borderRadius: '1.5rem', padding: 'clamp(0.75rem,2vw,1rem) clamp(1rem,3vw,2rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', boxShadow: '0 8px 32px rgba(102,126,234,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 4px 12px rgba(102,126,234,0.4)' }}>🛡️</div>
+            <div>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#1f2937', letterSpacing: '-0.5px' }}>VeriFlow</span>
+              <span style={{ fontSize: 11, color: '#9ca3af', display: 'block' }}>BGV System</span>
             </div>
-            <span className="brand-text">VeriFlow</span>
           </div>
-          
-          <div className="navbar-user" ref={dropdownRef}>
-            <div className="user-trigger" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-              <div className="user-avatar">
-                <i className="fas fa-user-circle"></i>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
+            <div onClick={() => setDropdownOpen(!dropdownOpen)} className="nb" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 14px', borderRadius: 14, border: '1.5px solid #e5e7eb', background: 'white', transition: 'all 0.2s' }}>
+              <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14 }}>{user?.name?.charAt(0).toUpperCase()}</div>
+              <div>
+                <p style={{ fontWeight: 700, color: '#1f2937', margin: 0, fontSize: 13 }}>{user?.name}</p>
+                <p style={{ fontSize: 10, color: '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: 0.5 }}>Candidate</p>
               </div>
-              <div className="user-info">
-                <p className="user-name">{user?.name || 'User'}</p>
-                <p className="user-role">Candidate</p>
-              </div>
-              <i className={`fas fa-chevron-down dropdown-chevron ${isDropdownOpen ? 'rotate' : ''}`}></i>
+              <span style={{ color: '#c4b5fd', fontSize: 10, transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
             </div>
-            
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                <div className="dropdown-header">
-                  <i className="fas fa-user-circle"></i>
-                  <div>
-                    <p className="dropdown-name">{user?.name}</p>
-                    <p className="dropdown-email">{user?.email}</p>
-                  </div>
-                </div>
-                <div className="dropdown-divider"></div>
-                <button onClick={goToDashboard} className="dropdown-item">
-                  <i className="fas fa-home"></i>
-                  <span>Home</span>
-                </button>
-                <button onClick={goToProfile} className="dropdown-item">
-                  <i className="fas fa-user"></i>
-                  <span>View Profile</span>
-                </button>
-                <button onClick={goToResetPassword} className="dropdown-item">
-                  <i className="fas fa-key"></i>
-                  <span>Reset Password</span>
-                </button>
-                <div className="dropdown-divider"></div>
-                <button onClick={handleLogout} className="dropdown-item logout">
-                  <i className="fas fa-sign-out-alt"></i>
-                  <span>Logout</span>
-                </button>
+            {dropdownOpen && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, background: 'white', border: '1.5px solid #e5e7eb', borderRadius: 18, minWidth: 220, padding: '8px 0', zIndex: 1000, boxShadow: '0 24px 56px rgba(102,126,234,0.18)', animation: 'slideUp 0.15s ease' }}>
+                {[
+                  { label: '🏠 Dashboard', action: () => navigate('/candidate/dashboard') },
+                  { label: '📁 My Documents', action: () => navigate('/documents') },
+                  { label: '📊 Verification Status', action: () => navigate('/verification-status') },
+                  { label: '🚪 Logout', action: handleLogout, red: true },
+                ].map((item, i) => (
+                  <button key={i} className="ddi" onClick={() => { item.action(); setDropdownOpen(false); }} style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', fontSize: 13, color: item.red ? '#dc2626' : '#374151', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontWeight: 500 }}>{item.label}</button>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* ====== PAGE HEADER ====== */}
-        <div className="page-header">
-          <h1>My Reports</h1>
-          <p>View and download your background verification reports</p>
+        {/* HEADER */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem,4vw,2rem)', fontWeight: 800, color: 'white', margin: '0 0 6px', letterSpacing: '-0.5px' }}>📋 My Reports</h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: 14 }}>Download your background verification reports</p>
         </div>
 
-        {/* ====== REPORTS LIST ====== */}
         {reports.length === 0 ? (
-        <div className="empty-state">
-            <i className="fas fa-file-pdf"></i>
-            <h3>No Reports Available</h3>
-            <p>Your background verification report has not been generated yet.</p>
-            <p className="empty-hint">Please wait for HR to verify all your documents and generate the report.</p>
-            <div className="empty-actions">
-            <Link to="/verification-status" className="btn-primary">
-                <i className="fas fa-check-double"></i> Check Verification Status
-            </Link>
-            <Link to="/documents" className="btn-secondary">
-                <i className="fas fa-folder-open"></i> View Documents
-            </Link>
+          <div style={{ background: 'white', borderRadius: '1.5rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+            <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #667eea15, #764ba215)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 36 }}>📂</div>
+            <h3 style={{ color: '#1f2937', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>No Reports Yet</h3>
+            <p style={{ color: '#9ca3af', margin: '0 0 6px', fontSize: 14 }}>Your BGV report hasn't been generated yet.</p>
+            <p style={{ color: '#d1d5db', margin: '0 0 24px', fontSize: 13 }}>Wait for HR to verify all documents first.</p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button onClick={() => navigate('/verification-status')} style={{ padding: '10px 22px', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 14, boxShadow: '0 4px 12px rgba(102,126,234,0.3)', transition: 'all 0.2s' }}>Check Status</button>
+              <button onClick={() => navigate('/documents')} style={{ padding: '10px 22px', background: 'white', color: '#667eea', border: '1.5px solid #c4b5fd', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 14, transition: 'all 0.2s' }}>View Documents</button>
             </div>
-        </div>
+          </div>
         ) : (
-          <div className="reports-grid">
-            {reports.map((report) => (
-              <div key={report._id} className="report-card">
-                <div className="report-icon">
-                  <i className="fas fa-file-pdf"></i>
-                </div>
-                <div className="report-info">
-                  <h3>{report.reportName || 'Background Verification Report'}</h3>
-                  <p className="report-meta">
-                    <i className="fas fa-calendar"></i> Generated: {formatDate(report.generatedAt)}
-                  </p>
-                  <p className="report-meta">
-                    <i className="fas fa-user"></i> Generated by: {report.generatedByName || 'HR'}
-                  </p>
-                  <div className="report-status">
-                    {getStatusBadge(report.status)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {reports.map((report) => {
+              const decision = report.finalDecision || report.reportData?.finalDecision || 'Pending';
+              const ds = getDecisionStyle(decision);
+              return (
+                <div key={report._id} className="rc" style={{ background: 'white', borderRadius: '1.5rem', padding: 'clamp(1rem,3vw,1.5rem)', display: 'flex', alignItems: 'center', gap: 'clamp(12px,3vw,24px)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', flexWrap: 'wrap', borderLeft: `4px solid ${ds.border}` }}>
+                  <div style={{ width: 60, height: 60, background: 'linear-gradient(135deg, #dc262615, #ef444415)', border: '2px solid #fecaca', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>📄</div>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <h3 style={{ color: '#1f2937', fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{report.reportName || 'BGV Report'}</h3>
+                    <p style={{ color: '#9ca3af', fontSize: 12, margin: '0 0 8px' }}>📅 {formatDate(report.generatedAt || report.createdAt)} · By {report.generatedByName || 'HR Manager'}</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: ds.bg, color: ds.color, border: `1px solid ${ds.border}` }}>{ds.icon} Decision: {decision}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0' }}>✅ Generated</span>
+                    </div>
                   </div>
-                  {report.isDownloaded && (
-                    <p className="report-downloaded">
-                      <i className="fas fa-check-circle"></i> Downloaded on {formatDate(report.downloadedAt)}
-                    </p>
-                  )}
+                  <button className="dl-btn" onClick={() => handleDownload(report._id)} disabled={downloading}
+                    style={{ padding: '11px 22px', background: downloading ? '#e5e7eb' : 'linear-gradient(135deg, #667eea, #764ba2)', color: downloading ? '#9ca3af' : 'white', border: 'none', borderRadius: 12, fontWeight: 700, cursor: downloading ? 'not-allowed' : 'pointer', fontSize: 14, whiteSpace: 'nowrap', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: downloading ? 'none' : '0 4px 12px rgba(102,126,234,0.3)', flexShrink: 0 }}>
+                    {downloading ? '⏳ Downloading...' : '⬇️ Download PDF'}
+                  </button>
                 </div>
-                <div className="report-actions">
-                  {report.status === 'generated' ? (
-                    <button 
-                      onClick={() => handleDownload(report._id)} 
-                      className="btn-download"
-                      disabled={downloading}
-                    >
-                      {downloading ? (
-                        <><i className="fas fa-spinner fa-spin"></i> Downloading...</>
-                      ) : (
-                        <><i className="fas fa-download"></i> Download Report</>
-                      )}
-                    </button>
-                  ) : (
-                    <button className="btn-disabled" disabled>
-                      <i className="fas fa-clock"></i> Processing
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* ====== INFO BOX ====== */}
-        <div className="info-box">
-          <i className="fas fa-info-circle"></i>
-          <div>
-            <strong>About Reports:</strong>
-            <ul>
-              <li>Reports are generated by HR after all your documents are verified</li>
-              <li>You will see the report here once it's generated</li>
-              <li>Reports include all verified documents and their status</li>
-              <li>You can download the report anytime from this page</li>
-            </ul>
-          </div>
+        <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '1.25rem', padding: '1.25rem 1.5rem', marginTop: '2rem' }}>
+          <p style={{ color: 'white', fontWeight: 700, margin: '0 0 6px', fontSize: 14 }}>ℹ️ About Your Reports</p>
+          <ul style={{ margin: 0, paddingLeft: 20, color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 1.8 }}>
+            <li>Reports are generated only after all 4 documents are verified by HR</li>
+            <li>Download as PDF anytime — valid for sharing with employers</li>
+            <li>Decision shows <strong>Clear</strong> when all documents pass verification</li>
+          </ul>
         </div>
 
-        {/* ====== CSS ====== */}
-        <style>{`
-          .page-wrapper {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 1.5rem;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-          }
-
-          .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-          }
-           .btn-secondary {
-            display: inline-block;
-            padding: 10px 24px;
-            background: white;
-            color: #4b5563;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            }
-            .btn-secondary:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
-            }
-            .empty-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 8px;
-            }
-          .page-loading {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 1.2rem;
-            gap: 12px;
-          }
-          .page-loading i {
-            font-size: 2rem;
-          }
-
-          .page-navbar {
-            background: white;
-            border-radius: 1.5rem;
-            padding: 0.75rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-          }
-
-          .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-          }
-
-          .brand-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 10px rgba(102,126,234,0.3);
-          }
-
-          .brand-text {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #1f2937;
-            letter-spacing: -0.5px;
-          }
-
-          .navbar-user {
-            position: relative;
-          }
-
-          .user-trigger {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 12px;
-            transition: background 0.2s;
-          }
-          .user-trigger:hover {
-            background: #f3f4f6;
-          }
-
-          .user-avatar {
-            font-size: 2rem;
-            color: #667eea;
-          }
-
-          .user-info {
-            text-align: left;
-          }
-          .user-name {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0;
-            line-height: 1.2;
-          }
-          .user-role {
-            font-size: 0.7rem;
-            color: #6b7280;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-
-          .dropdown-chevron {
-            color: #9ca3af;
-            font-size: 0.8rem;
-            transition: transform 0.3s;
-          }
-          .dropdown-chevron.rotate {
-            transform: rotate(180deg);
-          }
-
-          .dropdown-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            min-width: 260px;
-            padding: 8px 0;
-            z-index: 1000;
-            animation: slideDown 0.2s ease;
-          }
-
-          @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-
-          .dropdown-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-          }
-          .dropdown-header i {
-            font-size: 2.5rem;
-            color: #667eea;
-          }
-          .dropdown-name {
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0;
-          }
-          .dropdown-email {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin: 0;
-          }
-
-          .dropdown-divider {
-            height: 1px;
-            background: #e5e7eb;
-            margin: 6px 12px;
-          }
-
-          .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            font-size: 0.9rem;
-            color: #1f2937;
-            cursor: pointer;
-            transition: background 0.15s;
-            font-family: inherit;
-            text-align: left;
-          }
-          .dropdown-item:hover {
-            background: #f3f4f6;
-          }
-          .dropdown-item i {
-            width: 20px;
-            color: #6b7280;
-          }
-          .dropdown-item.logout {
-            color: #dc2626;
-          }
-          .dropdown-item.logout i {
-            color: #dc2626;
-          }
-
-          .page-header {
-            margin-bottom: 2rem;
-          }
-          .page-header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: white;
-            margin: 0 0 4px 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-          .page-header p {
-            color: rgba(255,255,255,0.8);
-            margin: 0;
-            font-size: 1rem;
-          }
-
-          .empty-state {
-            background: white;
-            border-radius: 1.25rem;
-            padding: 4rem 2rem;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          }
-          .empty-state i {
-            font-size: 4rem;
-            color: #d1d5db;
-            margin-bottom: 1rem;
-          }
-          .empty-state h3 {
-            margin: 0 0 8px 0;
-            color: #1f2937;
-            font-size: 1.5rem;
-          }
-          .empty-state p {
-            color: #6b7280;
-            margin: 0 0 4px 0;
-          }
-          .empty-hint {
-            color: #9ca3af !important;
-            font-size: 0.9rem !important;
-            margin-bottom: 24px !important;
-          }
-
-          .btn-primary {
-            display: inline-block;
-            padding: 10px 24px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: opacity 0.2s;
-          }
-          .btn-primary:hover {
-            opacity: 0.9;
-          }
-
-          .reports-grid {
-            display: grid;
-            gap: 1rem;
-          }
-
-          .report-card {
-            background: white;
-            border-radius: 1.25rem;
-            padding: 1.5rem 2rem;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            align-items: center;
-            gap: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-          }
-          .report-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-          }
-
-          .report-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.6rem;
-            flex-shrink: 0;
-          }
-
-          .report-info {
-            flex: 1;
-          }
-          .report-info h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0 0 4px 0;
-          }
-          .report-meta {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin: 2px 0;
-          }
-          .report-meta i {
-            margin-right: 6px;
-          }
-          .report-status {
-            margin-top: 6px;
-          }
-          .report-downloaded {
-            font-size: 0.8rem;
-            color: #059669;
-            margin: 4px 0 0 0;
-          }
-          .report-downloaded i {
-            margin-right: 4px;
-          }
-
-          .badge-success {
-            font-size: 0.75rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #d1fae5;
-            color: #059669;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-          }
-          .badge-pending {
-            font-size: 0.75rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #fef3c7;
-            color: #d97706;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-          }
-          .badge-danger {
-            font-size: 0.75rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #fee2e2;
-            color: #dc2626;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-          }
-
-          .report-actions {
-            display: flex;
-            gap: 10px;
-            flex-shrink: 0;
-          }
-
-          .btn-download {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          .btn-download:hover {
-            opacity: 0.9;
-          }
-          .btn-download:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          .btn-disabled {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            background: #f3f4f6;
-            color: #9ca3af;
-            font-weight: 600;
-            cursor: not-allowed;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-
-          .info-box {
-            background: white;
-            border-radius: 1.25rem;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            gap: 16px;
-            margin-top: 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          }
-          .info-box i {
-            font-size: 1.5rem;
-            color: #667eea;
-            flex-shrink: 0;
-            margin-top: 2px;
-          }
-          .info-box strong {
-            color: #1f2937;
-          }
-          .info-box ul {
-            margin: 4px 0 0 0;
-            padding-left: 20px;
-            color: #6b7280;
-            font-size: 0.9rem;
-          }
-          .info-box ul li {
-            margin-bottom: 2px;
-          }
-
-          @media (max-width: 1024px) {
-            .report-card {
-              grid-template-columns: 1fr;
-              text-align: center;
-            }
-            .report-icon {
-              margin: 0 auto;
-            }
-            .report-actions {
-              justify-content: center;
-            }
-          }
-
-          @media (max-width: 768px) {
-            .page-wrapper {
-              padding: 1rem;
-            }
-            .page-navbar {
-              padding: 0.75rem 1rem;
-              flex-wrap: wrap;
-            }
-            .report-card {
-              padding: 1.25rem;
-            }
-            .report-actions {
-              flex-direction: column;
-              width: 100%;
-            }
-            .report-actions button {
-              width: 100%;
-              justify-content: center;
-            }
-          }
-
-          @media (max-width: 480px) {
-            .page-header h1 {
-              font-size: 1.4rem;
-            }
-            .empty-state {
-              padding: 2rem 1rem;
-            }
-            .empty-state i {
-              font-size: 3rem;
-            }
-          }
-        `}</style>
       </div>
     </div>
   );
