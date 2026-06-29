@@ -1,7 +1,6 @@
 // models/User.js - Combined (Auth + Document module fields)
 const mongoose = require('mongoose');
 
-
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -11,7 +10,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
+    unique: true,  // ✅ This creates an index automatically
     lowercase: true,
     trim: true
   },
@@ -33,7 +32,6 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Document module fields
   phone: {
     type: String,
     default: null
@@ -46,7 +44,6 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  // Auth module fields
   resetPasswordToken: {
     type: String
   },
@@ -57,6 +54,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
 });
+
+// ✅ No extra indexes needed (email unique already creates index)
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

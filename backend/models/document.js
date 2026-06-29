@@ -5,9 +5,8 @@ const crypto = require('crypto');
 const DocumentSchema = new mongoose.Schema({
   documentId: {
     type: String,
-    unique: true,
+    unique: true,  // ✅ This creates an index automatically
     default: () => {
-      // ✅ Better unique ID generation
       const timestamp = Date.now().toString(36);
       const random = crypto.randomBytes(6).toString('hex');
       return `DOC_${timestamp}_${random}`;
@@ -17,7 +16,7 @@ const DocumentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true
+    index: true  // ✅ Keep this one
   },
   documentType: {
     type: String,
@@ -28,7 +27,6 @@ const DocumentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // ✅ File storage fields (combined from both branches)
   filePath: {
     type: String,
     required: true
@@ -47,7 +45,6 @@ const DocumentSchema = new mongoose.Schema({
     required: true,
     default: 'application/pdf'
   },
-  // ✅ Document status tracking
   status: {
     type: String,
     enum: ['pending', 'verified', 'rejected'],
@@ -57,17 +54,14 @@ const DocumentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // ✅ HR verification fields
   verifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     default: null
   },
   verifiedAt: {
     type: Date,
     default: null
   },
-  // ✅ Portal verification (for Aadhaar/PAN - from Final_flow)
   portalVerified: {
     type: Boolean,
     default: false
@@ -80,7 +74,6 @@ const DocumentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // ✅ Upload tracking
   uploadDate: {
     type: Date,
     default: Date.now
@@ -89,9 +82,9 @@ const DocumentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+// ✅ Indexes - REMOVED duplicate documentId index
 DocumentSchema.index({ candidateId: 1, documentType: 1 });
-DocumentSchema.index({ documentId: 1 });
+// DocumentSchema.index({ documentId: 1 }); // ❌ REMOVED - duplicate (unique: true already creates it)
 DocumentSchema.index({ status: 1 });
 
 module.exports = mongoose.models.Document || mongoose.model('Document', DocumentSchema);

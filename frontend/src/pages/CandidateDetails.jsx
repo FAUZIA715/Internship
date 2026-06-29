@@ -7,12 +7,25 @@ const CandidateDetails = () => {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [updating, setUpdating] = useState(false);
   const [generating, setGenerating] = useState(false);
+  
+  // ✅ Individual loading states
+  const [updatingAadhaar, setUpdatingAadhaar] = useState(false);
+  const [updatingPan, setUpdatingPan] = useState(false);
+  const [updatingDegree, setUpdatingDegree] = useState(false);
+  const [updatingEmployment, setUpdatingEmployment] = useState(false);
+  
+  // ✅ Database status (actual saved status)
   const [aadhaarStatus, setAadhaarStatus] = useState('not_uploaded');
   const [panStatus, setPanStatus] = useState('not_uploaded');
   const [degreeStatus, setDegreeStatus] = useState('not_uploaded');
   const [employmentStatus, setEmploymentStatus] = useState('not_uploaded');
+  
+  // ✅ Selected status (what user chooses in dropdown - not saved yet)
+  const [selectedAadhaar, setSelectedAadhaar] = useState('pending');
+  const [selectedPan, setSelectedPan] = useState('pending');
+  const [selectedDegree, setSelectedDegree] = useState('pending');
+  const [selectedEmployment, setSelectedEmployment] = useState('pending');
 
   useEffect(() => { fetchCandidate(); }, [id]);
 
@@ -22,29 +35,48 @@ const CandidateDetails = () => {
       const res = await fetch(`http://localhost:5000/api/hr/candidates/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
       setCandidate(data);
+      
+      // ✅ Set both database and selected status from data
       setAadhaarStatus(data.aadhaarStatus || 'not_uploaded');
       setPanStatus(data.panStatus || 'not_uploaded');
       setDegreeStatus(data.degreeStatus || 'not_uploaded');
       setEmploymentStatus(data.employmentStatus || 'not_uploaded');
+      
+      // ✅ Initialize selected statuses with current status
+      setSelectedAadhaar(data.aadhaarStatus || 'pending');
+      setSelectedPan(data.panStatus || 'pending');
+      setSelectedDegree(data.degreeStatus || 'pending');
+      setSelectedEmployment(data.employmentStatus || 'pending');
+      
     } catch (e) {}
     finally { setLoading(false); }
   };
 
   const showMsg = (text) => { setMessage(text); setTimeout(() => setMessage(''), 5000); };
 
-  const handleUpdate = async (docType, status) => {
+  // ✅ Handle update - uses selected status, not the current db status
+  const handleUpdate = async (docType, selectedStatus, setUpdating) => {
     setUpdating(true);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:5000/api/hr/candidates/${id}/update-document/${docType}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: selectedStatus })
       });
       const data = await res.json();
-      if (data.success) { showMsg(`✅ ${docType} updated to ${status}`); fetchCandidate(); }
-      else showMsg(`❌ ${data.message}`);
-    } catch { showMsg(`❌ Failed to update`); }
-    finally { setUpdating(false); }
+      if (data.success) {
+        showMsg(`✅ ${docType} updated to ${selectedStatus}`);
+        // ✅ Refresh to get the actual saved status
+        fetchCandidate();
+      } else {
+        showMsg(`❌ ${data.message}`);
+      }
+    } catch { 
+      showMsg(`❌ Failed to update`); 
+    }
+    finally { 
+      setUpdating(false); 
+    }
   };
 
   const handleView = (docType) => {
@@ -106,11 +138,44 @@ const CandidateDetails = () => {
     return <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: s.bg, color: s.color }}>{s.label}</span>;
   };
 
+  // ✅ Document cards with separate selected status
   const docCards = [
-    { type: 'aadhaar', label: '🪪 Aadhaar Card', status: aadhaarStatus, setStatus: setAadhaarStatus },
-    { type: 'pan', label: '💳 PAN Card', status: panStatus, setStatus: setPanStatus },
-    { type: 'degree', label: '🎓 Degree Certificate', status: degreeStatus, setStatus: setDegreeStatus },
-    { type: 'employment', label: '💼 Employment Proof', status: employmentStatus, setStatus: setEmploymentStatus },
+    { 
+      type: 'aadhaar', 
+      label: '🪪 Aadhaar Card', 
+      dbStatus: aadhaarStatus, 
+      selectedStatus: selectedAadhaar, 
+      setSelectedStatus: setSelectedAadhaar,
+      updating: updatingAadhaar, 
+      setUpdating: setUpdatingAadhaar 
+    },
+    { 
+      type: 'pan', 
+      label: '💳 PAN Card', 
+      dbStatus: panStatus, 
+      selectedStatus: selectedPan, 
+      setSelectedStatus: setSelectedPan,
+      updating: updatingPan, 
+      setUpdating: setUpdatingPan 
+    },
+    { 
+      type: 'degree', 
+      label: '🎓 Degree Certificate', 
+      dbStatus: degreeStatus, 
+      selectedStatus: selectedDegree, 
+      setSelectedStatus: setSelectedDegree,
+      updating: updatingDegree, 
+      setUpdating: setUpdatingDegree 
+    },
+    { 
+      type: 'employment', 
+      label: '💼 Employment Proof', 
+      dbStatus: employmentStatus, 
+      selectedStatus: selectedEmployment, 
+      setSelectedStatus: setSelectedEmployment,
+      updating: updatingEmployment, 
+      setUpdating: setUpdatingEmployment 
+    },
   ];
 
   if (loading) return (
@@ -184,10 +249,13 @@ const CandidateDetails = () => {
               <div key={doc.type} className="dc" style={{ background: '#fafafa', borderRadius: 16, padding: '1.125rem', border: '1.5px solid #e5e7eb', transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ color: '#1f2937', fontWeight: 700, fontSize: 14 }}>{doc.label}</span>
-                  {badge(doc.status)}
+                  {/* ✅ Show the DATABASE status, not the selected one */}
+                  {badge(doc.dbStatus)}
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <select value={doc.status} onChange={e => doc.setStatus(e.target.value)}
+                  <select 
+                    value={doc.selectedStatus} 
+                    onChange={e => doc.setSelectedStatus(e.target.value)}
                     style={{ flex: 1, padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: 8, background: 'white', fontSize: 13, cursor: 'pointer', outline: 'none', color: '#374151', fontWeight: 500, transition: 'border-color 0.2s' }}
                     onFocus={e => e.target.style.borderColor = '#667eea'}
                     onBlur={e => e.target.style.borderColor = '#e5e7eb'}>
@@ -195,11 +263,21 @@ const CandidateDetails = () => {
                     <option value="verified">✅ Verified</option>
                     <option value="rejected">❌ Rejected</option>
                   </select>
-                  <button className="upd" onClick={() => handleUpdate(doc.type, doc.status)} disabled={updating}
-                    style={{ padding: '8px 14px', background: updating ? '#e5e7eb' : 'linear-gradient(135deg, #667eea, #764ba2)', color: updating ? '#9ca3af' : 'white', border: 'none', borderRadius: 8, cursor: updating ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 12, transition: 'all 0.2s', boxShadow: updating ? 'none' : '0 2px 8px rgba(102,126,234,0.3)' }}>Update</button>
+                  <button className="upd" 
+                    onClick={() => handleUpdate(doc.type, doc.selectedStatus, doc.setUpdating)} 
+                    disabled={doc.updating}
+                    style={{ padding: '8px 14px', background: doc.updating ? '#e5e7eb' : 'linear-gradient(135deg, #667eea, #764ba2)', color: doc.updating ? '#9ca3af' : 'white', border: 'none', borderRadius: 8, cursor: doc.updating ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 12, transition: 'all 0.2s', boxShadow: doc.updating ? 'none' : '0 2px 8px rgba(102,126,234,0.3)' }}>
+                    {doc.updating ? '⏳ Updating...' : 'Update'}
+                  </button>
                   <button className="view" onClick={() => handleView(doc.type)}
                     style={{ padding: '8px 12px', background: '#f5f3ff', border: '1.5px solid #c4b5fd', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: '#667eea', fontWeight: 600, transition: 'all 0.2s' }}>👁️ View</button>
                 </div>
+                {/* ✅ Show a hint if selected status is different from database status */}
+                {doc.selectedStatus !== doc.dbStatus && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#f59e0b', fontWeight: 500 }}>
+                    ⚡ Click "Update" to save this change
+                  </div>
+                )}
               </div>
             ))}
           </div>

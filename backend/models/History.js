@@ -9,12 +9,14 @@ const HistorySchema = new mongoose.Schema({
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true  // ✅ Keep this one
   },
   documentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Document',
-    required: true
+    required: true,
+    index: true 
   },
   documentType: {
     type: String,
@@ -75,7 +77,7 @@ const HistorySchema = new mongoose.Schema({
 });
 
 HistorySchema.index({ candidateId: 1, timestamp: -1 });
-HistorySchema.index({ documentId: 1 });
+// HistorySchema.index({ documentId: 1 }); // ❌ REMOVED - duplicate (index: true already creates it)
 HistorySchema.index({ action: 1 });
 
 module.exports = mongoose.models.History || mongoose.model('History', HistorySchema);

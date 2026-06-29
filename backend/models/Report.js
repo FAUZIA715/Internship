@@ -3,14 +3,14 @@ const mongoose = require('mongoose');
 const ReportSchema = new mongoose.Schema({
   reportId: {
     type: String,
-    unique: true,
+    unique: true,  // ✅ This creates an index automatically
     default: () => 'RPT_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
   },
   candidateId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true
+    index: true  // ✅ Keep this one
   },
   candidateName: {
     type: String,
@@ -24,7 +24,6 @@ const ReportSchema = new mongoose.Schema({
     type: String,
     default: 'Not specified'
   },
-  // ✅ Document verification details (from hr_dashboard_complete)
   documents: [
     {
       documentType: {
@@ -54,13 +53,11 @@ const ReportSchema = new mongoose.Schema({
       }
     }
   ],
-  // ✅ Final decision (from hr_dashboard_complete)
   finalDecision: {
     type: String,
     enum: ['Clear', 'Not Clear', 'Pending'],
     default: 'Pending'
   },
-  // ✅ Report file details (from Final_flow)
   reportName: {
     type: String,
     required: true,
@@ -82,18 +79,15 @@ const ReportSchema = new mongoose.Schema({
     type: String,
     default: 'application/pdf'
   },
-  // ✅ Store full report data as JSON (from Final_flow)
   reportData: {
     type: Object,
     default: {}
   },
-  // ✅ Report generation status (from Final_flow)
   status: {
     type: String,
     enum: ['pending', 'generated', 'failed'],
     default: 'pending'
   },
-  // ✅ Who generated the report (from Final_flow)
   generatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -107,7 +101,6 @@ const ReportSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  // ✅ Download tracking (from Final_flow)
   isDownloaded: {
     type: Boolean,
     default: false
@@ -120,9 +113,9 @@ const ReportSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
+// ✅ Indexes - REMOVED duplicate reportId index
 ReportSchema.index({ candidateId: 1, createdAt: -1 });
 ReportSchema.index({ status: 1 });
-ReportSchema.index({ reportId: 1 });
+// ReportSchema.index({ reportId: 1 }); // ❌ REMOVED - duplicate (unique: true already creates it)
 
 module.exports = mongoose.models.Report || mongoose.model('Report', ReportSchema);
